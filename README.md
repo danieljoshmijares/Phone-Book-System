@@ -1,16 +1,79 @@
-# phone_book_system
+# 📒 Phone Book System – Branch Overview
 
-A new Flutter project.
+This project uses structured Git branches for clarity and effective collaboration.
 
-## Getting Started
+Repository: https://github.com/danieljoshmijares/Phone-Book-System.git
 
-This project is a starting point for a Flutter application.
+🚀 START HERE - Team Setup
 
-A few resources to get you started if this is your first Flutter project:
+# 1. Clone the repository
+git clone https://github.com/danieljoshmijares/Phone-Book-System.git
+cd <your-project-folder-location>
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+# 2. Get dependencies (warnings are NORMAL)
+flutter pub get
+flutter pub outdated
+flutter pub upgrade
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# 4. Open in your preferred IDE and run the project
+
+
+## Core Branches
+
+- master  
+  Stable, production-ready code only. All releases are merged here.
+
+- integration  
+  All development work and new features are integrated here before being released to master. This is the default branch. 
+
+## NOTE: DO NOT PUSH IN MASTER OR INTEGRATION (unless given permission)
+
+---
+
+## Feature Branches
+
+_Named as `feature/<feature-name>`. These are created from `integration` and merged back when finished._
+
+- feature/basic-crud  
+  Implements add, edit, delete, and view operations for contacts.
+
+- feature/search  
+  Adds searching capability by name or number.
+
+- feature/storage  
+  Integrates persistent storage for contact data (SharedPreferences).
+
+- feature/ui-modernization  
+  Modernizes UI: cards, dialogs, themes, icons, logo, etc.
+
+- feature/sort (optional)  
+  Adds sorting by name or number, including sort order toggles.
+
+---
+
+## Guidelines
+
+- Branch off from `integration` for features and fixes.
+- Use Pull Requests to merge changes, and request reviews when ready.
+- Keep each branch focused on a single feature or fix.
+
+---
+
+🔄 Development Workflow
+# 1. Get the latest integration branch explicitly
+git fetch origin
+git checkout -b integration origin/integration
+git pull origin integration
+
+# 2. Create your feature branch
+git checkout -b <feature/your-feature-name>
+
+# 3. After making changes:
+git add .
+git commit -m "Describe your changes"
+
+# 4. NOTE: PUSH ONLY YOUR CLEAN FINAL CODE TO THEIR RESPECTIVE REMOTE BRANCH
+git push -u origin <feature/remote-feature-name>
+
+
+Happy coding! 🚀
