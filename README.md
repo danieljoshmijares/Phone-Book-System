@@ -8,9 +8,10 @@ Repository: https://github.com/danieljoshmijares/Phone-Book-System.git
 
 # 1. Clone the repository
 git clone https://github.com/danieljoshmijares/Phone-Book-System.git
-cd <your-project-folder-location>
+cd Phone-Book-System
 
 # 2. Get dependencies (warnings are NORMAL)
+flutter clean
 flutter pub get
 flutter pub outdated
 flutter pub upgrade
