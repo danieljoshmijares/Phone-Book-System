@@ -16,7 +16,7 @@ flutter pub get
 flutter pub outdated
 flutter pub upgrade
 
-# 4. Open in your preferred IDE and run the project
+# 3. Open in your preferred IDE and run the project
 
 
 ## Core Branches
