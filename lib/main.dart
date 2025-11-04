@@ -141,10 +141,7 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const Center(
-                  child: Text('My Phonebook',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
+               
                 const SizedBox(height: 16),
 
                 // ==================== SEARCH BAR ==================== WALA pa onchange
