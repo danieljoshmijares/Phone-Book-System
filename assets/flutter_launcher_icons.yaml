@@ -1,0 +1,27 @@
+# flutter_launcher_icons configuration
+# Run this after placing icon in assets/icon/phone.png
+# Command: flutter pub run flutter_launcher_icons
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+  windows:
+    generate: true
+
+  image_path: "assets/icon/phone.png"
+
+  # Android adaptive icon (for launcher and Recent Apps consistency)
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/phone.png"
+  adaptive_icon_padding: 60
+
+  # iOS specific settings
+  ios_content_mode: "scaleAspectFit"
+
+  # Windows specific settings
+  windows_icon_size: 48
+
+  # Web settings
+  web_icon_size: 512

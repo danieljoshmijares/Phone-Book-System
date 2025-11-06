@@ -32,103 +32,202 @@ class ViewContactPage extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              // Name
-              const Text(
-                'Name:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-              Text(contact.name, style: const TextStyle(fontSize: 18, color: Colors.white)),
-              const SizedBox(height: 12),
-              // Mobile Number
-              const Text(
-                'Mobile Number:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-              Text(contact.number, style: const TextStyle(fontSize: 18, color: Colors.white)),
-              const SizedBox(height: 12),
-              // Tel Number
-              const Text(
-                'Tel Number:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-              Text(contact.tel, style: const TextStyle(fontSize: 18, color: Colors.white)),
-              const SizedBox(height: 12),
-              // Home Address
-              const Text(
-                'Home Address:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-              Text(contact.address, style: const TextStyle(fontSize: 18, color: Colors.white)),
-              const Spacer(),
-              // ==================== BUTTONS ====================
-              Row(
-                children: [ // Note: children, not mainAxisAlignment anymore
-                  // --- Delete Button ---
-                  Expanded( // ✅ WRAP the button with Expanded
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // delete the contact via callback and pop
-                        onDelete();
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.delete, color: Colors.white),
-                      label: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        // No shape, no horizontal padding needed
-                      ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // White card container with contact info
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ),
-
-                  const SizedBox(width: 10), // ✅ ADD space between the buttons
-
-                  // --- Edit Button ---
-                  Expanded( // ✅ WRAP this button too
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final updated = await Navigator.push<Contact>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EditContactPage(contact: contact),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Name
+                        const Text(
+                          'Name',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
                           ),
-                        );
-                        if (updated != null) {
-                          // Update the contact details and pop back to HomePage
-                          contact.name = updated.name;
-                          contact.number = updated.number;
-                          contact.tel = updated.tel;
-                          contact.address = updated.address;
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(
-                          Icons.edit_outlined, color: Colors.white),
-                      label: const Text(
-                        'Edit',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        // No shape, no horizontal padding needed
-                      ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          contact.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Mobile Number
+                        const Text(
+                          'Mobile Number',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          contact.number,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Tel Number
+                        const Text(
+                          'Tel Number',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          contact.tel,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Home Address
+                        const Text(
+                          'Home Address',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          contact.address,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Buttons row (now inside container)
+                        Row(
+                          children: [
+                            // Delete Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  // Show confirmation dialog
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Contact'),
+                                      content: const Text('Are you sure you want to delete 1 contact?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: const Text(
+                                            'Proceed Anyway',
+                                            style: TextStyle(color: Colors.redAccent),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  // If confirmed, delete and go back
+                                  if (confirm == true) {
+                                    onDelete();
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                icon: const Icon(Icons.delete, color: Colors.white),
+                                label: const Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.redAccent,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            // Edit Button
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final updated = await Navigator.push<Contact>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditContactPage(contact: contact),
+                                    ),
+                                  );
+                                  if (updated != null) {
+                                    contact.name = updated.name;
+                                    contact.number = updated.number;
+                                    contact.tel = updated.tel;
+                                    contact.address = updated.address;
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                                label: const Text(
+                                  'Edit',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         ),
       ),

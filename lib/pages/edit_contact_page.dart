@@ -51,15 +51,19 @@ class _EditContactPageState extends State<EditContactPage> {
             ),
           ),
           child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListView(
-                children: [
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   _buildField('Full Name', nameCtrl),
                   _buildField('Phone Number', numCtrl),
                   _buildField('Tel. Number', telCtrl),
@@ -83,7 +87,7 @@ class _EditContactPageState extends State<EditContactPage> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: const Text(
-                          'Clear',
+                          'Clear All',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -154,6 +158,8 @@ class _EditContactPageState extends State<EditContactPage> {
               ),
             ),
           ),
+        ),
+        ),
         ),
       );
 

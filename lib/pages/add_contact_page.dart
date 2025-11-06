@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/contact.dart';
-import '../main.dart';
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key});
@@ -40,15 +39,19 @@ class _AddContactPageState extends State<AddContactPage> {
             ),
           ),
           child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListView(
-                children: [
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   _buildField('Full Name', nameCtrl),
                   _buildField('Phone Number', numCtrl),
                   _buildField('Tel. Number', telCtrl),
@@ -70,7 +73,7 @@ class _AddContactPageState extends State<AddContactPage> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           child: const Text(
-                            'Clear', // Shorter name looks better
+                            'Clear All',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -145,6 +148,8 @@ class _AddContactPageState extends State<AddContactPage> {
               ),
             ),
           ),
+        ),
+        ),
         ),
       );
 
