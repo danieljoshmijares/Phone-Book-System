@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/contact.dart';
 
 class EditContactPage extends StatefulWidget {
@@ -31,7 +32,7 @@ class _EditContactPageState extends State<EditContactPage> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           title: const Text(
-            'Contact Info',
+            'Edit Contact',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -50,82 +51,144 @@ class _EditContactPageState extends State<EditContactPage> {
             ),
           ),
           child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListView(
-                children: [
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   _buildField('Full Name', nameCtrl),
                   _buildField('Phone Number', numCtrl),
                   _buildField('Tel. Number', telCtrl),
                   _buildField('Home Address', addrCtrl),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Validation: All fields must be filled
-                      if (nameCtrl.text.trim().isEmpty ||
-                          numCtrl.text.trim().isEmpty ||
-                          telCtrl.text.trim().isEmpty ||
-                          addrCtrl.text.trim().isEmpty) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Missing Information'),
-                            content: const Text('All fields are required.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Return updated contact to previous page
-                      Navigator.pop(
-                        context,
-                        Contact(
-                          name: nameCtrl.text.trim(),
-                          number: numCtrl.text.trim(),
-                          tel: telCtrl.text.trim(),
-                          address: addrCtrl.text.trim(),
+                  // ✅ PASTE THIS NEW CODE BLOCK AT THE <caret> LOCATION
+                  Row(
+                    children: [
+                      // --- Clear Button ---
+                      Expanded(child: ElevatedButton(
+                        onPressed: () {
+                          // This logic clears all the text fields
+                          nameCtrl.clear();
+                          numCtrl.clear();
+                          telCtrl.clear();
+                          addrCtrl.clear();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade700,
+                          // A neutral, secondary color
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Update Contact',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      ),
+
+                      const SizedBox(width: 10), // Space between the buttons
+
+                      // --- Update Button ---
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Validation: All fields must be filled
+                            if (nameCtrl.text
+                                .trim()
+                                .isEmpty ||
+                                numCtrl.text
+                                    .trim()
+                                    .isEmpty ||
+                                telCtrl.text
+                                    .trim()
+                                    .isEmpty ||
+                                addrCtrl.text
+                                    .trim()
+                                    .isEmpty) {
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    AlertDialog(
+                                      title: const Text('Missing Information'),
+                                      content: const Text(
+                                          'All fields are required.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                              return; // Stop execution if validation fails
+                            }
+
+                            // Return updated contact to previous page
+                            Navigator.pop(
+                              context,
+                              Contact(
+                                name: nameCtrl.text.trim(),
+                                number: numCtrl.text.trim(),
+                                tel: telCtrl.text.trim(),
+                                address: addrCtrl.text.trim(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            'Update',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
         ),
-      );
-
-  Widget _buildField(String label, TextEditingController controller) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: TextField(
-          controller: controller,
-          enabled: true, // ✅ ensure fields are editable
-          decoration: InputDecoration(
-            labelText: label,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        ),
         ),
       );
+
+  // ✅ PASTE THIS NEW METHOD
+  Widget _buildField(String label, TextEditingController controller) {
+    // Determine if this is a phone number field
+    final isPhoneField = label.contains('Phone Number') ||
+        label.contains('Tel. Number');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        // Use number pad for phone fields, default for others
+        keyboardType: isPhoneField ? TextInputType.phone : TextInputType.text,
+        // Apply strict input rules for phone fields
+        inputFormatters: isPhoneField
+            ? [
+          FilteringTextInputFormatter.digitsOnly, // Allow only numbers
+          LengthLimitingTextInputFormatter(15), // Limit to 15 digits
+        ]
+            : [], // No formatters for other fields
+      ),
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/contact.dart';
+import 'services/contact_storage.dart';
 import 'pages/add_contact_page.dart';
 import 'pages/edit_contact_page.dart';
 import 'pages/view_contact_page.dart';
@@ -34,14 +35,27 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
-  // SAMPLE DATA
-  final List<Contact> contacts = [
-    Contact(name: 'A1', number: '1000', tel: '1zz', address: '2b a'),
-    Contact(name: 'A2', number: '2000', tel: '2zz', address: '4b a'),
-    Contact(name: 'A3', number: '3000', tel: '3zz', address: '6b a'),
-    Contact(name: 'A4', number: '4000', tel: '4zz', address: '8b a'),
-    Contact(name: 'A5', number: '5000', tel: '5zz', address: '10b a'),
-  ];
+  // Contacts list (loaded from storage)
+  List<Contact> contacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContacts();
+  }
+
+  // Load contacts from storage on startup
+  Future<void> _loadContacts() async {
+    final loadedContacts = await ContactStorage.loadContacts();
+    setState(() {
+      contacts = loadedContacts;
+    });
+  }
+
+  // Save contacts to storage
+  Future<void> _saveContacts() async {
+    await ContactStorage.saveContacts(contacts);
+  }
 
   // ==================== NAVIGATION ====================
   Future<void> navigateToAddContact() async {
@@ -51,6 +65,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (newContact != null) {
       setState(() => contacts.add(newContact));
+      await _saveContacts(); // Save after adding
     }
   }
 
@@ -64,6 +79,7 @@ void navigateToViewContact(Contact contact) {
           setState(() {
             contacts.remove(contact); // remove the contact from the list
           });
+          _saveContacts(); // Save after deleting
         },
       ),
     ),
@@ -84,18 +100,47 @@ void navigateToViewContact(Contact contact) {
         contact.tel = updated.tel;
         contact.address = updated.address;
       });
+      await _saveContacts(); // Save after editing
     }
   }
 
   // ==================== DELETE SELECTED ====================
-  void deleteSelectedContacts() {
-    setState(() {
-      contacts.removeWhere(
-        (contact) => selectedIndexes.contains(contacts.indexOf(contact)),
-      );
-      selectedIndexes.clear();
-      isSelectionMode = false;
-    });
+  Future<void> deleteSelectedContacts() async {
+    final count = selectedIndexes.length;
+
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Contacts'),
+        content: Text('Are you sure you want to delete $count contact${count > 1 ? 's' : ''}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Proceed Anyway',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // If confirmed, delete contacts
+    if (confirm == true) {
+      setState(() {
+        contacts.removeWhere(
+          (contact) => selectedIndexes.contains(contacts.indexOf(contact)),
+        );
+        selectedIndexes.clear();
+        isSelectionMode = false;
+      });
+      _saveContacts(); // Save after bulk delete
+    }
   }
 
   @override
@@ -129,11 +174,14 @@ void navigateToViewContact(Contact contact) {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 // ==================== SEARCH BAR ====================
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -193,28 +241,6 @@ void navigateToViewContact(Contact contact) {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ElevatedButton.icon(
-                          onPressed: deleteSelectedContacts,
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          label: const Text(
-                            'Delete',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20,
-                              horizontal: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (isSelectionMode)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ElevatedButton.icon(
                           onPressed: () => setState(() {
                             selectedIndexes.clear();
                             isSelectionMode = false;
@@ -236,24 +262,47 @@ void navigateToViewContact(Contact contact) {
                           ),
                         ),
                       ),
-                    ElevatedButton.icon(
-                      onPressed: navigateToAddContact,
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      label: const Text(
-                        'Add Contact',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                    if (isSelectionMode)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: deleteSelectedContacts,
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 16,
+                            ),
+                          ),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 20,
-                          horizontal: 16,
+                    if (!isSelectionMode)
+                      ElevatedButton.icon(
+                        onPressed: navigateToAddContact,
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text(
+                          'Add Contact',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 16,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
 
@@ -283,6 +332,8 @@ void navigateToViewContact(Contact contact) {
 
                       return StatefulBuilder(
                         builder: (context, setTileState) {
+                          bool isLongPressing = false;
+
                           return MouseRegion(
                             onEnter: (_) => setTileState(() {
                               tileColor = isSelected
@@ -294,67 +345,82 @@ void navigateToViewContact(Contact contact) {
                                   ? Colors.blue.shade100
                                   : Colors.white;
                             }),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4.0),
-                              decoration: BoxDecoration(
-                                color: tileColor,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.blue
-                                      : Colors.transparent,
-                                ),
-                              ),
-                              child: ListTile(
-                                leading: isSelectionMode
-                                    ? Checkbox(
-                                        value: isSelected,
-                                        onChanged: (value) => setState(() {
-                                          if (value == true) {
-                                            selectedIndexes.add(realIndex);
-                                          } else {
+                            child: GestureDetector(
+                              onLongPressStart: (_) {
+                                setTileState(() {
+                                  isLongPressing = true;
+                                  tileColor = Colors.blue.shade300;
+                                });
+                              },
+                              onLongPressEnd: (_) {
+                                setTileState(() {
+                                  isLongPressing = false;
+                                });
+                                setState(() {
+                                  isSelectionMode = true;
+                                  selectedIndexes.add(realIndex);
+                                });
+                              },
+                              child: AnimatedScale(
+                                scale: isLongPressing ? 0.95 : 1.0,
+                                duration: const Duration(milliseconds: 100),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 4.0),
+                                  decoration: BoxDecoration(
+                                    color: tileColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    leading: isSelectionMode
+                                        ? Checkbox(
+                                            value: isSelected,
+                                            onChanged: (value) => setState(() {
+                                              if (value == true) {
+                                                selectedIndexes.add(realIndex);
+                                              } else {
+                                                selectedIndexes.remove(realIndex);
+                                                if (selectedIndexes.isEmpty) {
+                                                  isSelectionMode = false;
+                                                }
+                                              }
+                                            }),
+                                          )
+                                        : null,
+                                    title: Text(contact.name),
+                                    subtitle: Text(contact.number),
+                                    trailing: !isSelectionMode
+                                        ? IconButton(
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              color: Colors.indigo,
+                                            ),
+                                            onPressed: () =>
+                                                navigateToEditContact(contact),
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      if (isSelectionMode) {
+                                        setState(() {
+                                          if (isSelected) {
                                             selectedIndexes.remove(realIndex);
                                             if (selectedIndexes.isEmpty) {
                                               isSelectionMode = false;
                                             }
+                                          } else {
+                                            selectedIndexes.add(realIndex);
                                           }
-                                        }),
-                                      )
-                                    : null,
-                                title: Text(contact.name),
-                                subtitle: Text(contact.number),
-                                trailing: !isSelectionMode
-                                    ? IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          color: Colors.indigo,
-                                        ),
-                                        onPressed: () =>
-                                            navigateToEditContact(contact),
-                                      )
-                                    : null,
-                                onTap: () {
-                                  if (isSelectionMode) {
-                                    setState(() {
-                                      if (isSelected) {
-                                        selectedIndexes.remove(realIndex);
-                                        if (selectedIndexes.isEmpty) {
-                                          isSelectionMode = false;
-                                        }
+                                        });
                                       } else {
-                                        selectedIndexes.add(realIndex);
+                                        navigateToViewContact(contact);
                                       }
-                                    });
-                                  } else {
-                                    navigateToViewContact(contact);
-                                  }
-                                },
-                                onLongPress: () {
-                                  setState(() {
-                                    isSelectionMode = true;
-                                    selectedIndexes.add(realIndex);
-                                  });
-                                },
+                                    },
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -366,6 +432,8 @@ void navigateToViewContact(Contact contact) {
               ],
             ),
           ),
+        ),
+        ),
         ),
       ),
     );
