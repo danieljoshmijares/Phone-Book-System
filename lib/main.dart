@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Phonebook',
+      title: 'My PhoneBook',
       home: const HomePage(),
     );
   }
@@ -154,7 +154,7 @@ void navigateToViewContact(Contact contact) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'My Phonebook',
+          'My PhoneBook',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,

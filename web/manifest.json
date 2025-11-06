@@ -1,6 +1,6 @@
 {
-    "name": "phone_book_system",
-    "short_name": "phone_book_system",
+    "name": "My PhoneBook",
+    "short_name": "My PhoneBook",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
