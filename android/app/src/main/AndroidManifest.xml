@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="phone_book_system"
+        android:label="My PhoneBook"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

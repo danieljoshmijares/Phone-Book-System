@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
+import '../models/contact.dart';
+import 'pages/add_contact_page.dart';
+import 'pages/edit_contact_page.dart';
+import 'pages/view_contact_page.dart';
 
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Phonebook',
-        home: const HomePage(),
-      );
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Phonebook',
+      home: const HomePage(),
+    );
+  }
 }
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -23,277 +31,343 @@ class _HomePageState extends State<HomePage> {
   bool isSelectionMode = false;
   Set<int> selectedIndexes = {};
 
+  final TextEditingController searchController = TextEditingController();
+  String searchQuery = '';
+
   // SAMPLE DATA
-  final List<Map<String, String>> contacts = [
-    {'name': 'A1', 'number': '1000', 'tel': '1zz', 'address': '2b a'}, //
-    {'name': 'A2', 'number': '2000', 'tel': '2zz', 'address': '4b a'}, //
-    {'name': 'A3', 'number': '3000', 'tel': '3zz', 'address': '6b a'}, //
-    {'name': 'A4', 'number': '4000', 'tel': '4zz', 'address': '8b a'}, // 
-    {'name': 'A5', 'number': '5000', 'tel': '5zz', 'address': '10b a'}, //
-    {'name': 'A6', 'number': '6000', 'tel': '6zz', 'address': '12b a'}, //
-  ]; //
+  final List<Contact> contacts = [
+    Contact(name: 'A1', number: '1000', tel: '1zz', address: '2b a'),
+    Contact(name: 'A2', number: '2000', tel: '2zz', address: '4b a'),
+    Contact(name: 'A3', number: '3000', tel: '3zz', address: '6b a'),
+    Contact(name: 'A4', number: '4000', tel: '4zz', address: '8b a'),
+    Contact(name: 'A5', number: '5000', tel: '5zz', address: '10b a'),
+  ];
 
-  // ==================== ADD CONTACT ====================
-  void addContact() => showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Add Contact'),
-          content: const SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(decoration: InputDecoration(labelText: 'Full Name')),
-              TextField(decoration: InputDecoration(labelText: 'Phone Number')),
-              TextField(decoration: InputDecoration(labelText: 'Tel. Number')),
-              TextField(decoration: InputDecoration(labelText: 'Home Address')),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            ElevatedButton(onPressed: () {}, child: const Text('Clear')),
-            ElevatedButton(onPressed: () {}, child: const Text('Save')),
-          ],
-        ),
-      );
+  // ==================== NAVIGATION ====================
+  Future<void> navigateToAddContact() async {
+    final newContact = await Navigator.push<Contact>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddContactPage()),
+    );
+    if (newContact != null) {
+      setState(() => contacts.add(newContact));
+    }
+  }
 
-  // ==================== VIEW CONTACT ====================
-  void viewContact(Map<String, String> contact) => showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Center(
-            child: Text('View Contact',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
-          ),
-          content: SingleChildScrollView(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const SizedBox(height: 8),
-              const Text('Name:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              Text(contact['name']!, style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 12),
-              const Text('Mobile Number:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              Text(contact['number']!, style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 12),
-              const Text('Tel Number:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              Text(contact['tel']!, style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 12),
-              const Text('Home Address:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              Text(contact['address']!, style: const TextStyle(fontSize: 18)),
-            ]),
-          ),
-          actions: [
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(foregroundColor: Colors.blue, textStyle: const TextStyle(fontSize: 18)),
-                child: const Text('Close'),
-              ),
-            ),
-          ],
-        ),
-      );
+void navigateToViewContact(Contact contact) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ViewContactPage(
+        contact: contact,
+        onDelete: () {
+          setState(() {
+            contacts.remove(contact); // remove the contact from the list
+          });
+        },
+      ),
+    ),
+  );
+}
 
-  // ==================== EDIT CONTACT ====================
-  void editContact(Map<String, String> contact) {
-    final name = TextEditingController(text: contact['name']);
-    final num = TextEditingController(text: contact['number']);
-    final tel = TextEditingController(text: contact['tel']);
-    final address = TextEditingController(text: contact['address']);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Center(
-          child: Text('Edit Contact',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
-        ),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Full Name')),
-            TextField(controller: num, decoration: const InputDecoration(labelText: 'Phone Number')),
-            TextField(controller: tel, decoration: const InputDecoration(labelText: 'Tel. Number')),
-            TextField(controller: address, decoration: const InputDecoration(labelText: 'Home Address')),
-          ]),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: (
-
-          ) {}, child: const Text('Clear')),
-          ElevatedButton(onPressed: 
-          () {}, child: const Text('Update')),
-        ],
+  Future<void> navigateToEditContact(Contact contact) async {
+    final updated = await Navigator.push<Contact>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditContactPage(contact: contact),
       ),
     );
+    if (updated != null) {
+      setState(() {
+        contact.name = updated.name;
+        contact.number = updated.number;
+        contact.tel = updated.tel;
+        contact.address = updated.address;
+      });
+    }
+  }
+
+  // ==================== DELETE SELECTED ====================
+  void deleteSelectedContacts() {
+    setState(() {
+      contacts.removeWhere(
+        (contact) => selectedIndexes.contains(contacts.indexOf(contact)),
+      );
+      selectedIndexes.clear();
+      isSelectionMode = false;
+    });
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar( //header ================= 1
-          title: const Text('My Phonebook',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
-        ),
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Color(0xFF007BFF), Color(0xFF00B4D8)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-               
-                const SizedBox(height: 16),
+  Widget build(BuildContext context) {
+    final filteredContacts = contacts.where((contact) {
+      final query = searchQuery.toLowerCase();
+      return contact.name.toLowerCase().contains(query) ||
+          contact.number.toLowerCase().contains(query);
+    }).toList();
 
-                // ==================== SEARCH BAR ==================== WALA pa onchange
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'My Phonebook',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF007BFF), Color(0xFF00B4D8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ==================== SEARCH BAR ====================
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(12)),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Row(children: [
-                      Icon(Icons.search, color: Colors.black54),
-                      SizedBox(width: 8),
-                      Text('Search Contacts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ]),
-                    const SizedBox(height: 8),
-                    const TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter name or number...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                        enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide(color: Colors.grey, width: 1)),
-                        focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide(color: Colors.blue, width: 1.5)),
-                        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.search, color: Colors.black54),
+                          SizedBox(width: 8),
+                          Text(
+                            'Search Contacts',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ]),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: searchController,
+                        onChanged: (value) =>
+                            setState(() => searchQuery = value),
+                        decoration: InputDecoration(
+                          hintText: 'Enter name or number...',
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setState(() {
+                                      searchController.clear();
+                                      searchQuery = '';
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
 
-                // ==================== BUTTONS ==================== add delete cancel
-                Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  if (isSelectionMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ElevatedButton.icon(
-                        onPressed: (
-                          
-                        ) {}, // DELETE BUTTON
-                        icon: const Icon(Icons.delete, color: Colors.white),
-                        label: const Text('Delete', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
+                // ==================== BUTTONS ====================
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isSelectionMode)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: deleteSelectedContacts,
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16)),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  if (isSelectionMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ElevatedButton.icon(
-                        onPressed: () => setState(() {
-                          selectedIndexes.clear();
-                          isSelectionMode = false;
-                        }),
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        label: const Text('Cancel', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
+                    if (isSelectionMode)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: () => setState(() {
+                            selectedIndexes.clear();
+                            isSelectionMode = false;
+                          }),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          label: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16)),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ElevatedButton.icon(
+                      onPressed: navigateToAddContact,
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text(
+                        'Add Contact',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
                       ),
                     ),
-                  ElevatedButton.icon(
-                    onPressed: addContact, // edit in add contact
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text('Add Contact', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16)),
-                  ),
-                ]),
+                  ],
+                ),
+
                 const SizedBox(height: 16),
 
-                const Text('My Contacts',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                const Text(
+                  'My Contacts',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 const SizedBox(height: 8),
 
                 // ==================== CONTACT LIST ====================
                 Expanded(
                   child: ListView.builder(
-                    itemCount: contacts.length,
+                    itemCount: filteredContacts.length,
                     itemBuilder: (context, index) {
-                      final contact = contacts[index]; // Get current contact data
-                      bool isSelected = selectedIndexes.contains(index); // Check if contact is selected
-                      Color tileColor = isSelected ? Colors.blue.shade100 : Colors.white;
-                      return StatefulBuilder(builder: (context, setTileState) {
-                        return MouseRegion( // Hover mouse effect
-                          onEnter: (_) => setTileState(() {
-                            tileColor = isSelected ? Colors.blue.shade200 : Colors.grey.shade200;
-                          }),
-                          onExit: (_) => setTileState(() {
-                            tileColor = isSelected ? Colors.blue.shade100 : Colors.white;
-                          }),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: tileColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isSelected ? Colors.blue : Colors.transparent),
-                            ),
-                            child: ListTile(
-                              // Checkbox logic (for multiple selection)
-                              leading: isSelectionMode
-                                  ? Checkbox(
-                                      value: isSelected,
-                                      onChanged: (value) => setState(() {
-                                        if (value == true) {selectedIndexes.add(index);} // add to checkbox
-                                        else {
-                                          selectedIndexes.remove(index); // remove from checkbox
-                                          if (selectedIndexes.isEmpty) isSelectionMode = false; // exit mode if none
+                      final contact = filteredContacts[index];
+                      final realIndex = contacts.indexOf(contact);
+                      final isSelected = selectedIndexes.contains(realIndex);
+                      Color tileColor = isSelected
+                          ? Colors.blue.shade100
+                          : Colors.white;
+
+                      return StatefulBuilder(
+                        builder: (context, setTileState) {
+                          return MouseRegion(
+                            onEnter: (_) => setTileState(() {
+                              tileColor = isSelected
+                                  ? Colors.blue.shade200
+                                  : Colors.grey.shade200;
+                            }),
+                            onExit: (_) => setTileState(() {
+                              tileColor = isSelected
+                                  ? Colors.blue.shade100
+                                  : Colors.white;
+                            }),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4.0),
+                              decoration: BoxDecoration(
+                                color: tileColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.blue
+                                      : Colors.transparent,
+                                ),
+                              ),
+                              child: ListTile(
+                                leading: isSelectionMode
+                                    ? Checkbox(
+                                        value: isSelected,
+                                        onChanged: (value) => setState(() {
+                                          if (value == true) {
+                                            selectedIndexes.add(realIndex);
+                                          } else {
+                                            selectedIndexes.remove(realIndex);
+                                            if (selectedIndexes.isEmpty) {
+                                              isSelectionMode = false;
+                                            }
+                                          }
+                                        }),
+                                      )
+                                    : null,
+                                title: Text(contact.name),
+                                subtitle: Text(contact.number),
+                                trailing: !isSelectionMode
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          color: Colors.indigo,
+                                        ),
+                                        onPressed: () =>
+                                            navigateToEditContact(contact),
+                                      )
+                                    : null,
+                                onTap: () {
+                                  if (isSelectionMode) {
+                                    setState(() {
+                                      if (isSelected) {
+                                        selectedIndexes.remove(realIndex);
+                                        if (selectedIndexes.isEmpty) {
+                                          isSelectionMode = false;
                                         }
-                                      }),
-                                    )
-                                  : null,
-                              // Contact name and number display
-                              title: Text(contact['name']!),
-                              subtitle: Text(contact['number']!),
-                              // Edit button
-                              trailing: !isSelectionMode
-                                  ? IconButton(
-                                      icon: const Icon(Icons.edit_outlined, color: Colors.indigo),
-                                      onPressed: () => editContact(contact), // EDIT CONTACT FUNCTION
-                                    )
-                                  : null,
-                              // for view contact
-                              onTap: () {
-                                if (isSelectionMode) {
+                                      } else {
+                                        selectedIndexes.add(realIndex);
+                                      }
+                                    });
+                                  } else {
+                                    navigateToViewContact(contact);
+                                  }
+                                },
+                                onLongPress: () {
                                   setState(() {
-                                    if (isSelected) {
-                                      selectedIndexes.remove(index);
-                                      if (selectedIndexes.isEmpty) isSelectionMode = false;
-                                    } else {selectedIndexes.add(index);}
+                                    isSelectionMode = true;
+                                    selectedIndexes.add(realIndex);
                                   });
-                                } else {viewContact(contact);}
-                              },
-                              // Long press logic for checkbox
-                              onLongPress: () => setState(() {
-                                isSelectionMode = true;
-                                selectedIndexes.add(index); //add to index selec
-                              }),
+                                },
+                              ),
                             ),
-                          ),
-                        );
-                      });
+                          );
+                        },
+                      );
                     },
                   ),
                 ),
-              ]),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
