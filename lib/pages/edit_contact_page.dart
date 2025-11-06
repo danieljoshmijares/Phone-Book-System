@@ -73,7 +73,7 @@ class _EditContactPageState extends State<EditContactPage> {
                   Row(
                     children: [
                       // --- Clear Button ---
-                      Expanded(child: ElevatedButton(
+                      Expanded(child: ElevatedButton.icon(
                         onPressed: () {
                           // This logic clears all the text fields
                           nameCtrl.clear();
@@ -86,7 +86,8 @@ class _EditContactPageState extends State<EditContactPage> {
                           // A neutral, secondary color
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text(
+                        icon: const Icon(Icons.clear_all, color: Colors.white),
+                        label: const Text(
                           'Clear All',
                           style: TextStyle(color: Colors.white),
                         ),
@@ -97,7 +98,7 @@ class _EditContactPageState extends State<EditContactPage> {
 
                       // --- Update Button ---
                       Expanded(
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             // Validation: All fields must be filled
                             if (nameCtrl.text
@@ -143,10 +144,11 @@ class _EditContactPageState extends State<EditContactPage> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
+                            backgroundColor: const Color(0xFF1976D2), // Material Blue 700
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text(
+                          icon: const Icon(Icons.update, color: Colors.white),
+                          label: const Text(
                             'Update',
                             style: TextStyle(color: Colors.white),
                           ),

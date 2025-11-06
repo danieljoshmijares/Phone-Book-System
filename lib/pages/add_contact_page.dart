@@ -61,7 +61,7 @@ class _AddContactPageState extends State<AddContactPage> {
                   Row(
                     children: [ // --- Clear Button ---
                       Expanded(
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             nameCtrl.clear();
                             numCtrl.clear();
@@ -72,7 +72,8 @@ class _AddContactPageState extends State<AddContactPage> {
                             backgroundColor: Colors.grey.shade700,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text(
+                          icon: const Icon(Icons.clear_all, color: Colors.white),
+                          label: const Text(
                             'Clear All',
                             style: TextStyle(color: Colors.white),
                           ),
@@ -83,7 +84,7 @@ class _AddContactPageState extends State<AddContactPage> {
 
                       // --- Save Button ---
                       Expanded(
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             // Trim inputs and validate all fields
                             if (nameCtrl.text
@@ -131,11 +132,12 @@ class _AddContactPageState extends State<AddContactPage> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
+                            backgroundColor: const Color(0xFF1976D2), // Material Blue 700
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text(
-                            'Save', // Shorter name
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          label: const Text(
+                            'Save',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),

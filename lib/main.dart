@@ -15,6 +15,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'My PhoneBook',
+      theme: ThemeData(
+        checkboxTheme: CheckboxThemeData(
+          fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const Color(0xFF1976D2); // Material Blue 700
+            }
+            return Colors.grey;
+          }),
+        ),
+      ),
       home: const HomePage(),
     );
   }
@@ -296,7 +306,7 @@ void navigateToViewContact(Contact contact) {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
+                          backgroundColor: const Color(0xFF1976D2), // Material Blue 700
                           padding: const EdgeInsets.symmetric(
                             vertical: 20,
                             horizontal: 16,
@@ -397,7 +407,7 @@ void navigateToViewContact(Contact contact) {
                                         ? IconButton(
                                             icon: const Icon(
                                               Icons.edit_outlined,
-                                              color: Colors.indigo,
+                                              color: Color(0xFF1976D2), // Material Blue 700
                                             ),
                                             onPressed: () =>
                                                 navigateToEditContact(contact),

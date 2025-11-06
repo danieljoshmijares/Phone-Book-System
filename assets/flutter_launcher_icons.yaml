@@ -15,7 +15,7 @@ flutter_launcher_icons:
   # Android adaptive icon (for launcher and Recent Apps consistency)
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/phone.png"
-  adaptive_icon_padding: 60
+  adaptive_icon_padding: 100
 
   # iOS specific settings
   ios_content_mode: "scaleAspectFit"

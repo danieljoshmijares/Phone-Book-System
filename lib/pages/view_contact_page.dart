@@ -215,7 +215,7 @@ class ViewContactPage extends StatelessWidget {
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.indigo,
+                                  backgroundColor: const Color(0xFF1976D2), // Material Blue 700
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
                               ),
