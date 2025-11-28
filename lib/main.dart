@@ -4,6 +4,8 @@ import 'services/contact_storage.dart';
 import 'pages/add_contact_page.dart';
 import 'pages/edit_contact_page.dart';
 import 'pages/view_contact_page.dart';
+import 'pages/login_user_page.dart';
+
 
 void main() => runApp(const MyApp());
 
@@ -25,7 +27,10 @@ class MyApp extends StatelessWidget {
           }),
         ),
       ),
-      home: const HomePage(),
+      home: const LoginUserPage(), //START APP WITH LOGIN PAGE
+      routes: {
+        '/home': (context) => const HomePage(),
+      },
     );
   }
 }
@@ -174,6 +179,52 @@ void navigateToViewContact(Contact contact) {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginUserPage(),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                        child: const Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
