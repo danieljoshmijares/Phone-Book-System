@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'register_user_page.dart';
+import '../services/auth_service.dart';
 
 class LoginUserPage extends StatefulWidget {
   const LoginUserPage({super.key});
@@ -13,6 +14,8 @@ class _LoginUserPageState extends State<LoginUserPage> {
   final emailCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -87,23 +90,75 @@ class _LoginUserPageState extends State<LoginUserPage> {
                           //=======LOGIN BUTTON==========
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                // TEMPORARY BYPASS - Just navigate to home without validation
-                                // TODO: Re-enable validation after database implementation
-                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                  '/home',
-                                  (route) => false,
+                              onPressed: _isLoading ? null : () async {
+                                final email = emailCtrl.text.trim();
+                                final password = passwordCtrl.text.trim();
+
+                                if (email.isEmpty || password.isEmpty) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Missing Information'),
+                                      content: const Text('Email and Password are required.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _isLoading = true);
+
+                                final result = await _authService.signIn(
+                                  email: email,
+                                  password: password,
                                 );
+
+                                setState(() => _isLoading = false);
+
+                                if (result['success']) {
+                                  Navigator.of(context).pushNamedAndRemoveUntil(
+                                    '/home',
+                                    (route) => false,
+                                  );
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Login Failed'),
+                                      content: Text(result['message']),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     const Color(0xFF1976D2), // Material Blue 700
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              icon: const Icon(Icons.login, color: Colors.white),
-                              label: const Text(
-                                'Login',
-                                style: TextStyle(color: Colors.white),
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.login, color: Colors.white),
+                              label: Text(
+                                _isLoading ? 'Logging in...' : 'Login',
+                                style: const TextStyle(color: Colors.white),
                               ),
                             ),
                           ),

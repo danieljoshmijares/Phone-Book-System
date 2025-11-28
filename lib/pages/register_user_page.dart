@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'login_user_page.dart';
+import '../services/auth_service.dart';
 
 class RegisterUserPage extends StatefulWidget {
   const RegisterUserPage({super.key});
@@ -16,6 +17,8 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   final confirmPasswordCtrl = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -94,67 +97,130 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                           // REGISTER BUTTON ===================
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                if (fullNameCtrl.text.trim().isEmpty ||
-                                    emailCtrl.text.trim().isEmpty ||
-                                    passwordCtrl.text.trim().isEmpty ||
-                                    confirmPasswordCtrl.text.trim().isEmpty) {
+                              onPressed: _isLoading ? null : () async {
+                                final fullName = fullNameCtrl.text.trim();
+                                final email = emailCtrl.text.trim();
+                                final password = passwordCtrl.text.trim();
+                                final confirmPassword = confirmPasswordCtrl.text.trim();
+
+                                if (fullName.isEmpty || email.isEmpty ||
+                                    password.isEmpty || confirmPassword.isEmpty) {
                                   showDialog(
                                     context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text('Missing Information'),
-                                        content: const Text('All fields are required.'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('OK'),
-                                          ),
-                                        ],
-                                      );
-                                    },
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Missing Information'),
+                                      content: const Text('All fields are required.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                   return;
                                 }
-                                if (!emailCtrl.text.contains('@')) {
+
+                                if (!email.contains('@')) {
                                   showDialog(
                                     context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text('Invalid Email'),
-                                        content: const Text('must be valid email address.'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('OK'),
-                                          ),
-                                        ],
-                                      );
-                                    },
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Invalid Email'),
+                                      content: const Text('Must be valid email address.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                   return;
                                 }
-                                // Register and redirect to login page
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginUserPage(),
-                                  ),
+
+                                if (password != confirmPassword) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Password Mismatch'),
+                                      content: const Text('Passwords do not match.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _isLoading = true);
+
+                                final result = await _authService.register(
+                                  email: email,
+                                  password: password,
+                                  fullName: fullName,
                                 );
+
+                                setState(() => _isLoading = false);
+
+                                if (result['success']) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Success'),
+                                      content: const Text('Registration successful! Please login.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const LoginUserPage(),
+                                              ),
+                                            );
+                                          },
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Registration Failed'),
+                                      content: Text(result['message']),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     const Color(0xFF1976D2), // Material Blue 700
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              icon: const Icon(Icons.app_registration, color: Colors.white),
-                              label: const Text(
-                                'Register',
-                                style: TextStyle(color: Colors.white),
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.app_registration, color: Colors.white),
+                              label: Text(
+                                _isLoading ? 'Registering...' : 'Register',
+                                style: const TextStyle(color: Colors.white),
                               ),
                             ),
                           ),

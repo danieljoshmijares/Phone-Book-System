@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/contact.dart';
-import 'services/contact_storage.dart';
+import 'services/firestore_service.dart';
+import 'services/auth_service.dart';
+import 'services/firebase_options.dart';
 import 'pages/add_contact_page.dart';
 import 'pages/edit_contact_page.dart';
 import 'pages/view_contact_page.dart';
 import 'pages/login_user_page.dart';
 
-
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -50,13 +58,29 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
-  // Contacts list (loaded from storage)
+  // Contacts list (loaded from Firestore)
   List<Contact> contacts = [];
+
+  // Services
+  final FirestoreService _firestoreService = FirestoreService();
+  final AuthService _authService = AuthService();
+
+  // User name
+  String userName = 'User';
 
   @override
   void initState() {
     super.initState();
     _loadContacts();
+    _loadUserName();
+  }
+
+  // Load user's full name
+  Future<void> _loadUserName() async {
+    final name = await _authService.getCurrentUserName();
+    setState(() {
+      userName = name;
+    });
   }
 
   Widget _buildContactAvatar(Contact contact) {
@@ -124,17 +148,17 @@ class _HomePageState extends State<HomePage> {
     _saveContacts();
   }
 
-  // Load contacts from storage on startup
+  // Load contacts from Firestore on startup
   Future<void> _loadContacts() async {
-    final loadedContacts = await ContactStorage.loadContacts();
+    final loadedContacts = await _firestoreService.loadContacts();
     setState(() {
       contacts = loadedContacts;
     });
   }
 
-  // Save contacts to storage
+  // Save contacts to Firestore
   Future<void> _saveContacts() async {
-    await ContactStorage.saveContacts(contacts);
+    await _firestoreService.saveContacts(contacts);
   }
 
   // ==================== NAVIGATION ====================
@@ -237,9 +261,9 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           children: [
-            Text(
+            const Text(
               'My PhoneBook',
               style: TextStyle(
                 fontSize: 24,
@@ -248,8 +272,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Text(
-              'Welcome, User!', // TODO: Replace with actual user full name from database
-              style: TextStyle(
+              'Welcome, $userName!',
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
                 color: Colors.grey,
@@ -282,7 +306,8 @@ class _HomePageState extends State<HomePage> {
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await _authService.signOut();
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
