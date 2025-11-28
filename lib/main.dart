@@ -62,15 +62,32 @@ class _HomePageState extends State<HomePage> {
   Widget _buildContactAvatar(Contact contact) {
     final hasImage = contact.imageUrl != null && contact.imageUrl!.isNotEmpty;
 
+    if (hasImage) {
+      return CircleAvatar(
+        radius: 22,
+        backgroundColor: Colors.grey.shade300,
+        child: ClipOval(
+          child: Image.network(
+            contact.imageUrl!,
+            width: 44,
+            height: 44,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.person, size: 28, color: Colors.black54);
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Icon(Icons.person, size: 28, color: Colors.black54);
+            },
+          ),
+        ),
+      );
+    }
+
     return CircleAvatar(
-      radius: 22, // <-- consistent size for both image and default icon
+      radius: 22,
       backgroundColor: Colors.grey.shade300,
-      backgroundImage: hasImage
-          ? NetworkImage(contact.imageUrl!)
-          : null, // If null, avatar shows child instead
-      child: hasImage
-          ? null
-          : const Icon(Icons.person, size: 28, color: Colors.black54),
+      child: const Icon(Icons.person, size: 28, color: Colors.black54),
     );
   }
   // ==================== SORTING METHODS ====================
@@ -486,6 +503,41 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
+                    // ==================== SELECT ALL CHECKBOX ====================
+                    if (isSelectionMode)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: selectedIndexes.length == contacts.length && contacts.isNotEmpty,
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value == true) {
+                                    // Select all contacts
+                                    selectedIndexes = Set.from(
+                                      List.generate(contacts.length, (index) => index),
+                                    );
+                                  } else {
+                                    // Deselect all
+                                    selectedIndexes.clear();
+                                    isSelectionMode = false;
+                                  }
+                                });
+                              },
+                            ),
+                            const Text(
+                              'Select All',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                     // ==================== CONTACT LIST ====================
                     Expanded(

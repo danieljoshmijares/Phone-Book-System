@@ -19,6 +19,16 @@ class _AddContactPageState extends State<AddContactPage> {
   List<TextEditingController> customKeyCtrls = [];
   List<TextEditingController> customValueCtrls = [];
 
+  bool _canAddCustomField() {
+    // Can add if there are no custom fields yet
+    if (customKeyCtrls.isEmpty) return true;
+
+    // Can add only if the last custom field has both key and value filled
+    final lastIndex = customKeyCtrls.length - 1;
+    return customKeyCtrls[lastIndex].text.trim().isNotEmpty &&
+           customValueCtrls[lastIndex].text.trim().isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -61,101 +71,80 @@ class _AddContactPageState extends State<AddContactPage> {
                   _buildField('Tel. Number', telCtrl),
                   _buildField('Home Address', addrCtrl),
                   _buildField('Image URL (optional)', imageCtrl),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-
-                      // Add new field text (clickable)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            customKeyCtrls.add(TextEditingController());
-                            customValueCtrls.add(TextEditingController());
-                          });
-                        },
-                        child: const Text(
-                          '+ Add Custom Field',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF1976D2),
-                            fontWeight: FontWeight.w500,
+                  // Loop for all custom fields
+                  for (int i = 0; i < customKeyCtrls.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: customKeyCtrls[i],
+                              decoration: InputDecoration(
+                                labelText: 'Field Name',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: customValueCtrls[i],
+                              decoration: InputDecoration(
+                                labelText: 'Value',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                customKeyCtrls.removeAt(i);
+                                customValueCtrls.removeAt(i);
+                              });
+                            },
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
-                      // Loop for all custom fields (they appear below the text)
-                      for (int i = 0; i < customKeyCtrls.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: customKeyCtrls[i],
-                                  decoration: const InputDecoration(
-                                    labelText: 'Field Name',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: customValueCtrls[i],
-                                  decoration: const InputDecoration(
-                                    labelText: 'Value',
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    customKeyCtrls.removeAt(i);
-                                    customValueCtrls.removeAt(i);
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  // ✅ PASTE THIS NEW CODE BLOCK
                   Row(
                     children: [
-                      // --- Clear Button ---
+                      // Add Custom Field Button
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            nameCtrl.clear();
-                            numCtrl.clear();
-                            telCtrl.clear();
-                            addrCtrl.clear();
-                            imageCtrl.clear();
-                          },
+                          onPressed: _canAddCustomField()
+                              ? () {
+                                  setState(() {
+                                    customKeyCtrls.add(TextEditingController());
+                                    customValueCtrls.add(TextEditingController());
+                                  });
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey.shade700,
+                            backgroundColor: const Color(0xFF00897B),
+                            disabledBackgroundColor: Colors.grey.shade400,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          icon: const Icon(
-                            Icons.clear_all,
-                            color: Colors.white,
-                          ),
+                          icon: const Icon(Icons.add, color: Colors.white),
                           label: const Text(
-                            'Clear All',
+                            'Add Custom Field',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
                       ),
 
-                      const SizedBox(width: 10), // Space between the buttons
-                      // --- Save Button ---
+                      const SizedBox(width: 10),
+                      // Save Button
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
@@ -165,7 +154,8 @@ class _AddContactPageState extends State<AddContactPage> {
                             final addr = addrCtrl.text.trim();
                             Map<String, String> newCustomFields = {};
 
-                            final regex = RegExp(r'^\d{3}-\d{3}-\d{4}$');
+                            final phoneRegex = RegExp(r'^\d{4}-\d{3}-\d{4}$');
+                            final telRegex = RegExp(r'^\d{3}-\d{4}$');
 
                             for (int i = 0; i < customKeyCtrls.length; i++) {
                               final k = customKeyCtrls[i].text.trim();
@@ -200,23 +190,39 @@ class _AddContactPageState extends State<AddContactPage> {
                             }
 
                             // ------- FORMAT CHECKS -------
-                            if (!regex.hasMatch(phone)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Phone Number must be XXX-XXX-XXXX',
+                            if (!phoneRegex.hasMatch(phone)) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Invalid Format'),
+                                  content: const Text(
+                                    'Phone Number must be XXXX-XXX-XXXX',
                                   ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
                                 ),
                               );
                               return;
                             }
 
-                            if (!regex.hasMatch(tel)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Telephone Number must be XXX-XXX-XXXX',
+                            if (!telRegex.hasMatch(tel)) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Invalid Format'),
+                                  content: const Text(
+                                    'Telephone Number must be XXX-XXXX',
                                   ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
                                 ),
                               );
                               return;
@@ -260,32 +266,42 @@ class _AddContactPageState extends State<AddContactPage> {
     ),
   );
 
-  // REPLACE your old _buildField method with this one
   Widget _buildField(String label, TextEditingController controller) {
-    // Determine if this is a phone number field
-    final isPhoneField =
-        label.contains('Phone Number') || label.contains('Tel. Number');
+    final isPhoneField = label.contains('Phone Number');
+    final isTelField = label.contains('Tel. Number');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        // ✅ ADD THESE NEW PROPERTIES
-        // Use number pad for phone fields, default for others
-        keyboardType: isPhoneField ? TextInputType.phone : TextInputType.text,
-        // Apply strict input rules for phone fields
-        inputFormatters: isPhoneField
-            ? [
-                PhoneNumberFormatter(),
-                // Allow only numbers
-                LengthLimitingTextInputFormatter(12),
-                // Limit to 12 digits
-              ]
-            : [], // No formatters for other fields
+      padding: const EdgeInsets.only(bottom: 16),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          return TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: label,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              suffixIcon: value.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () => controller.clear(),
+                    )
+                  : null,
+            ),
+            keyboardType: (isPhoneField || isTelField) ? TextInputType.phone : TextInputType.text,
+            inputFormatters: isPhoneField
+                ? [
+                    PhoneNumberFormatter(),
+                    LengthLimitingTextInputFormatter(13), // XXXX-XXX-XXXX (10 digits + 2 dashes)
+                  ]
+                : isTelField
+                    ? [
+                        TelephoneNumberFormatter(),
+                        LengthLimitingTextInputFormatter(8), // XXX-XXXX (7 digits + 1 dash)
+                      ]
+                    : [],
+          );
+        },
       ),
     );
   }

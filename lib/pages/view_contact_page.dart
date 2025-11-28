@@ -15,13 +15,32 @@ class ViewContactPage extends StatelessWidget {
   Widget _buildProfileImage() {
     final hasImage = contact.imageUrl != null && contact.imageUrl!.isNotEmpty;
 
+    if (hasImage) {
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.grey.shade300,
+        child: ClipOval(
+          child: Image.network(
+            contact.imageUrl!,
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.person, size: 50, color: Colors.black54);
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Icon(Icons.person, size: 50, color: Colors.black54);
+            },
+          ),
+        ),
+      );
+    }
+
     return CircleAvatar(
-      radius: 60,
+      radius: 50,
       backgroundColor: Colors.grey.shade300,
-      backgroundImage: hasImage ? NetworkImage(contact.imageUrl!) : null,
-      child: hasImage
-          ? null
-          : const Icon(Icons.person, size: 60, color: Colors.black54),
+      child: const Icon(Icons.person, size: 50, color: Colors.black54),
     );
   }
 
@@ -54,8 +73,6 @@ class ViewContactPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _buildProfileImage(),
-                    const SizedBox(height: 20),
                     // White card container with contact info
                     Container(
                       width: double.infinity,
@@ -74,6 +91,11 @@ class ViewContactPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Profile image at top of white container
+                          Center(
+                            child: _buildProfileImage(),
+                          ),
+                          const SizedBox(height: 20),
                           // Name
                           const Text(
                             'Name',
@@ -149,6 +171,38 @@ class ViewContactPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
+
+                          // Custom Fields Display
+                          if (contact.customFields.isNotEmpty) ...[
+                            const Divider(),
+                            const SizedBox(height: 12),
+                            for (var entry in contact.customFields.entries)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      entry.key,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      entry.value,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                          ],
 
                           // Buttons row (now inside container)
                           Row(
@@ -233,6 +287,8 @@ class ViewContactPage extends StatelessWidget {
                                       contact.number = updated.number;
                                       contact.tel = updated.tel;
                                       contact.address = updated.address;
+                                      contact.imageUrl = updated.imageUrl;
+                                      contact.customFields = updated.customFields;
                                       Navigator.pop(context);
                                     }
                                   },
