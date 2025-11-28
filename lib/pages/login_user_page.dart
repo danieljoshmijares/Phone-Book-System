@@ -58,7 +58,7 @@ class _LoginUserPageState extends State<LoginUserPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildField('Email/Phone', emailCtrl, isPassword: false),
+                      _buildField('Email', emailCtrl, isPassword: false),
                       _buildPasswordField('Password', passwordCtrl),
                       const SizedBox(height: 20),
                       Row(
@@ -88,60 +88,8 @@ class _LoginUserPageState extends State<LoginUserPage> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                if (emailCtrl.text.trim().isEmpty ||
-                                    passwordCtrl.text.trim().isEmpty) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text('Missing Information'),
-                                        content: const Text(
-                                            'Email/Phone and Password are required.'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('OK'),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  return;
-                                }
-
-                               
-                                final email = emailCtrl.text.trim();
-                                final password = passwordCtrl.text.trim();
-                                
-                                // PAPALIT NALANG LOGIC SA GAGAWIN NA DATABASE==============================================================
-                                const String validEmail = 'a';
-                                const String validPassword = '1';
-                                if (email != validEmail || password != validPassword) {
-                                  
-                                  //popup for failed login
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: const Text('Invalid Login Credentials'),
-                                        content: const Text('The email/phone or password you entered is incorrect.'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('OK'),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  return;
-                                }
-                                
-                                // Credentials are valid navigate to main.dart
+                                // TEMPORARY BYPASS - Just navigate to home without validation
+                                // TODO: Re-enable validation after database implementation
                                 Navigator.of(context).pushNamedAndRemoveUntil(
                                   '/home',
                                   (route) => false,

@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
   }
   // ==================== SORTING METHODS ====================
 
-  void _sortByName() {
+  void _sortByNameAsc() {
     setState(() {
       contacts.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -84,25 +84,25 @@ class _HomePageState extends State<HomePage> {
     _saveContacts();
   }
 
-  void _sortByPhone() {
+  void _sortByNameDesc() {
+    setState(() {
+      contacts.sort(
+        (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
+      );
+    });
+    _saveContacts();
+  }
+
+  void _sortByPhoneAsc() {
     setState(() {
       contacts.sort((a, b) => a.number.compareTo(b.number));
     });
     _saveContacts();
   }
 
-  void _sortByTel() {
+  void _sortByPhoneDesc() {
     setState(() {
-      contacts.sort((a, b) => a.tel.compareTo(b.tel));
-    });
-    _saveContacts();
-  }
-
-  void _sortByAddress() {
-    setState(() {
-      contacts.sort(
-        (a, b) => a.address.toLowerCase().compareTo(b.address.toLowerCase()),
-      );
+      contacts.sort((a, b) => b.number.compareTo(a.number));
     });
     _saveContacts();
   }
@@ -220,13 +220,25 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My PhoneBook',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+        title: const Column(
+          children: [
+            Text(
+              'My PhoneBook',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            Text(
+              'Welcome, User!', // TODO: Replace with actual user full name from database
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
+                color: Colors.grey,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -410,32 +422,32 @@ class _HomePageState extends State<HomePage> {
                             icon: const Icon(Icons.sort, color: Colors.white),
                             color: Colors.white,
                             onSelected: (value) {
-                              if (value == 'name') {
-                                _sortByName();
-                              } else if (value == 'number') {
-                                _sortByPhone();
-                              } else if (value == 'tel') {
-                                _sortByTel();
-                              } else if (value == 'address') {
-                                _sortByAddress();
+                              if (value == 'name_asc') {
+                                _sortByNameAsc();
+                              } else if (value == 'name_desc') {
+                                _sortByNameDesc();
+                              } else if (value == 'phone_asc') {
+                                _sortByPhoneAsc();
+                              } else if (value == 'phone_desc') {
+                                _sortByPhoneDesc();
                               }
                             },
                             itemBuilder: (context) => [
                               const PopupMenuItem(
-                                value: 'name',
+                                value: 'name_asc',
                                 child: Text('Sort by Name (A–Z)'),
                               ),
                               const PopupMenuItem(
-                                value: 'number',
-                                child: Text('Sort by Phone Number'),
+                                value: 'name_desc',
+                                child: Text('Sort by Name (Z–A)'),
                               ),
                               const PopupMenuItem(
-                                value: 'tel',
-                                child: Text('Sort by Tel Number'),
+                                value: 'phone_asc',
+                                child: Text('Sort by Phone (Ascending)'),
                               ),
                               const PopupMenuItem(
-                                value: 'address',
-                                child: Text('Sort by Address'),
+                                value: 'phone_desc',
+                                child: Text('Sort by Phone (Descending)'),
                               ),
                             ],
                           ),
@@ -561,38 +573,7 @@ class _HomePageState extends State<HomePage> {
                                             : _buildContactAvatar(contact),
 
                                         title: Text(contact.name),
-                                        subtitle: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              contact.number,
-                                            ), // existing mobile number
-                                            if (contact.tel.isNotEmpty)
-                                              Text(
-                                                "Tel: ${contact.tel}",
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            if (contact.address.isNotEmpty)
-                                              Text(
-                                                contact.address,
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            if (contact.customFields != null)
-                                              ...contact.customFields!.entries.map(
-                                                (entry) => Text(
-                                                  "${entry.key}: ${entry.value}",
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
+                                        subtitle: Text(contact.number),
 
                                         trailing: !isSelectionMode
                                             ? IconButton(

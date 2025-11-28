@@ -150,45 +150,6 @@ class ViewContactPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
 
-                          if (contact.customFields.isNotEmpty) ...[
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Other Information',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            for (var entry in contact.customFields.entries)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry.key,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      entry.value,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-
                           // Buttons row (now inside container)
                           Row(
                             children: [

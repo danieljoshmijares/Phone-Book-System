@@ -12,7 +12,6 @@ class RegisterUserPage extends StatefulWidget {
 class _RegisterUserPageState extends State<RegisterUserPage> {
   final fullNameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  final numberCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmPasswordCtrl = TextEditingController();
   bool _obscurePassword = true;
@@ -22,7 +21,6 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   void dispose() {
     fullNameCtrl.dispose();
     emailCtrl.dispose();
-    numberCtrl.dispose();
     passwordCtrl.dispose();
     confirmPasswordCtrl.dispose();
     super.dispose();
@@ -67,7 +65,6 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                     children: [
                       _buildField('Full Name', fullNameCtrl, isPassword: false),
                       _buildField('Email', emailCtrl, isPassword: false),
-                      _buildField('Phone Number', numberCtrl, isPassword: false),
                       _buildPasswordField('Password', passwordCtrl),
                       _buildPasswordField('Confirm Password', confirmPasswordCtrl, isConfirm: true),
                       const SizedBox(height: 20),
@@ -79,7 +76,6 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                               onPressed: () {
                                 fullNameCtrl.clear();
                                 emailCtrl.clear();
-                                numberCtrl.clear();
                                 passwordCtrl.clear();
                                 confirmPasswordCtrl.clear();
                               },
@@ -98,10 +94,9 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                           // REGISTER BUTTON ===================
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {  
+                              onPressed: () {
                                 if (fullNameCtrl.text.trim().isEmpty ||
                                     emailCtrl.text.trim().isEmpty ||
-                                    numberCtrl.text.trim().isEmpty ||
                                     passwordCtrl.text.trim().isEmpty ||
                                     confirmPasswordCtrl.text.trim().isEmpty) {
                                   showDialog(
