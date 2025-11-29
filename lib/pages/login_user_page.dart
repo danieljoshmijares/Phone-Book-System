@@ -19,10 +19,17 @@ class _LoginUserPageState extends State<LoginUserPage> {
   final Set<String> _touchedFields = {};
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reset validation state if user navigated back with empty fields
+  void dispose() {
+    emailCtrl.dispose();
+    passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Auto-clear validation errors if user cleared both fields
     if (emailCtrl.text.isEmpty && passwordCtrl.text.isEmpty && _touchedFields.isNotEmpty) {
+      // Schedule clearing for after this build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
@@ -31,17 +38,8 @@ class _LoginUserPageState extends State<LoginUserPage> {
         }
       });
     }
-  }
 
-  @override
-  void dispose() {
-    emailCtrl.dispose();
-    passwordCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
+    return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
           title: const Text(
