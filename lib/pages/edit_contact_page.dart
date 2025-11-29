@@ -367,24 +367,26 @@ class _EditContactPageState extends State<EditContactPage> {
               }
             },
             decoration: InputDecoration(
-              label: isRequired
-                  ? RichText(
-                      text: TextSpan(
-                        text: label,
-                        style: const TextStyle(color: Colors.black87, fontSize: 16),
-                        children: const [
-                          TextSpan(
-                            text: ' *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
-                          ),
-                        ],
+              label: RichText(
+                text: TextSpan(
+                  text: label,
+                  style: const TextStyle(color: Colors.black87, fontSize: 16),
+                  children: [
+                    if (isRequired)
+                      const TextSpan(
+                        text: ' *',
+                        style: TextStyle(color: Colors.red, fontSize: 16),
+                      )
+                    else
+                      const TextSpan(
+                        text: ' (Optional)',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
-                    )
-                  : Text(label),
+                  ],
+                ),
+              ),
               errorText: showError ? 'This is a required field' : null,
               errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
-              helperText: !isRequired ? '(Optional)' : null,
-              helperStyle: const TextStyle(color: Colors.grey, fontSize: 12),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

@@ -481,6 +481,10 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
 
   // Password field with real-time validation checklist
   Widget _buildPasswordFieldWithValidation(String fieldName, String label, TextEditingController controller) {
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isTouched && isEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -495,7 +499,13 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
           child: TextField(
             controller: controller,
             obscureText: _obscurePassword,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) {
+              if (isTouched) {
+                setState(() {});
+              } else {
+                setState(() {});
+              }
+            },
             decoration: InputDecoration(
               label: RichText(
                 text: TextSpan(
@@ -509,8 +519,24 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                   ],
                 ),
               ),
+              errorText: showError ? 'This is a required field' : null,
+              errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: showError ? Colors.red : Colors.grey,
+                  width: showError ? 2 : 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: showError ? Colors.red : const Color(0xFF1976D2),
+                  width: 2,
+                ),
               ),
               suffixIcon: IconButton(
                 icon: Icon(
