@@ -19,6 +19,15 @@ class _LoginUserPageState extends State<LoginUserPage> {
   final Set<String> _touchedFields = {};
 
   @override
+  void initState() {
+    super.initState();
+    // Clear everything when page loads (fresh start)
+    emailCtrl.clear();
+    passwordCtrl.clear();
+    _touchedFields.clear();
+  }
+
+  @override
   void dispose() {
     emailCtrl.dispose();
     passwordCtrl.dispose();
@@ -27,18 +36,6 @@ class _LoginUserPageState extends State<LoginUserPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Auto-clear validation errors if user cleared both fields
-    if (emailCtrl.text.isEmpty && passwordCtrl.text.isEmpty && _touchedFields.isNotEmpty) {
-      // Schedule clearing for after this build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _touchedFields.clear();
-          });
-        }
-      });
-    }
-
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
