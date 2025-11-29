@@ -20,6 +20,7 @@ class _EditContactPageState extends State<EditContactPage> {
   late TextEditingController imageCtrl;
   List<TextEditingController> customKeyCtrls = [];
   List<TextEditingController> customValueCtrls = [];
+  final Set<String> _touchedFields = {};
 
   bool _canAddCustomField() {
     if (customKeyCtrls.isEmpty) return true;
@@ -90,15 +91,15 @@ class _EditContactPageState extends State<EditContactPage> {
                 mainAxisSize: MainAxisSize.min,
 
                 children: [
-                  _buildRequiredField('Full Name', nameCtrl, isRequired: true),
+                  _buildRequiredField('name', 'Full Name', nameCtrl, isRequired: true),
                   const SizedBox(height: 12),
-                  _buildRequiredField('Phone Number', numCtrl, isRequired: true),
+                  _buildRequiredField('phone', 'Phone Number', numCtrl, isRequired: true),
                   const SizedBox(height: 12),
-                  _buildRequiredField('Tel. Number', telCtrl, isRequired: true),
+                  _buildRequiredField('tel', 'Tel. Number', telCtrl, isRequired: true),
                   const SizedBox(height: 12),
-                  _buildRequiredField('Home Address', addrCtrl, isRequired: true),
+                  _buildRequiredField('address', 'Home Address', addrCtrl, isRequired: true),
                   const SizedBox(height: 12),
-                  _buildRequiredField('Image URL', imageCtrl, isRequired: false),
+                  _buildRequiredField('image', 'Image URL', imageCtrl, isRequired: false),
 
                   const SizedBox(height: 16),
 
@@ -339,59 +340,89 @@ class _EditContactPageState extends State<EditContactPage> {
     );
   }
 
-  // Required field with red asterisk for Edit Contact
-  Widget _buildRequiredField(String label, TextEditingController controller, {required bool isRequired}) {
+  // Required field with red asterisk and conditional error message for Edit Contact
+  Widget _buildRequiredField(String fieldName, String label, TextEditingController controller, {required bool isRequired}) {
     final isPhoneField = label.contains('Phone Number');
     final isTelField = label.contains('Tel. Number');
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isRequired && isTouched && isEmpty;
 
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, child) {
-        return TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            label: isRequired
-                ? RichText(
-                    text: TextSpan(
-                      text: label,
-                      style: const TextStyle(color: Colors.black87, fontSize: 16),
-                      children: const [
-                        TextSpan(
-                          text: ' *',
-                          style: TextStyle(color: Colors.red, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  )
-                : Text(label),
-            helperText: isRequired ? 'This is a required field' : '(Optional)',
-            helperStyle: TextStyle(
-              color: isRequired ? Colors.red : Colors.grey,
-              fontSize: 12,
-            ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            suffixIcon: value.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 20),
-                    onPressed: () => controller.clear(),
-                  )
-                : null,
-          ),
-          keyboardType: (isPhoneField || isTelField) ? TextInputType.phone : TextInputType.text,
-          inputFormatters: isPhoneField
-              ? [
-                  PhoneNumberFormatter(),
-                  LengthLimitingTextInputFormatter(13),
-                ]
-              : isTelField
-                  ? [
-                      TelephoneNumberFormatter(),
-                      LengthLimitingTextInputFormatter(8),
-                    ]
-                  : [],
-        );
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setState(() {
+            _touchedFields.add(fieldName);
+          });
+        }
       },
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          return TextField(
+            controller: controller,
+            onChanged: (_) {
+              if (isTouched) {
+                setState(() {});
+              }
+            },
+            decoration: InputDecoration(
+              label: isRequired
+                  ? RichText(
+                      text: TextSpan(
+                        text: label,
+                        style: const TextStyle(color: Colors.black87, fontSize: 16),
+                        children: const [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(label),
+              errorText: showError ? 'This is a required field' : null,
+              errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+              helperText: !isRequired ? '(Optional)' : null,
+              helperStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: showError ? Colors.red : Colors.grey,
+                  width: showError ? 2 : 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: showError ? Colors.red : const Color(0xFF1976D2),
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              suffixIcon: value.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () => controller.clear(),
+                    )
+                  : null,
+            ),
+            keyboardType: (isPhoneField || isTelField) ? TextInputType.phone : TextInputType.text,
+            inputFormatters: isPhoneField
+                ? [
+                    PhoneNumberFormatter(),
+                    LengthLimitingTextInputFormatter(13),
+                  ]
+                : isTelField
+                    ? [
+                        TelephoneNumberFormatter(),
+                        LengthLimitingTextInputFormatter(8),
+                      ]
+                    : [],
+          );
+        },
+      ),
     );
   }
 }

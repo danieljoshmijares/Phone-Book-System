@@ -19,6 +19,7 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   bool _obscureConfirmPassword = true;
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+  final Set<String> _touchedFields = {};
 
   @override
   void dispose() {
@@ -66,13 +67,13 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildRequiredField('Full Name', fullNameCtrl),
+                      _buildRequiredField('fullName', 'Full Name', fullNameCtrl),
                       const SizedBox(height: 12),
-                      _buildRequiredField('Email', emailCtrl),
+                      _buildRequiredField('email', 'Email', emailCtrl),
                       const SizedBox(height: 12),
-                      _buildPasswordFieldWithValidation('Password', passwordCtrl),
+                      _buildPasswordFieldWithValidation('password', 'Password', passwordCtrl),
                       const SizedBox(height: 12),
-                      _buildRequiredPasswordField('Confirm Password', confirmPasswordCtrl),
+                      _buildRequiredPasswordField('confirmPassword', 'Confirm Password', confirmPasswordCtrl),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -80,10 +81,13 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                fullNameCtrl.clear();
-                                emailCtrl.clear();
-                                passwordCtrl.clear();
-                                confirmPasswordCtrl.clear();
+                                setState(() {
+                                  fullNameCtrl.clear();
+                                  emailCtrl.clear();
+                                  passwordCtrl.clear();
+                                  confirmPasswordCtrl.clear();
+                                  _touchedFields.clear();
+                                });
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey.shade700,
@@ -417,11 +421,27 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
     );
   }
 
-  // Required field with red asterisk and helper text
-  Widget _buildRequiredField(String label, TextEditingController controller) {
+  // Required field with red asterisk and conditional error message
+  Widget _buildRequiredField(String fieldName, String label, TextEditingController controller) {
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isTouched && isEmpty;
+
     return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setState(() {
+            _touchedFields.add(fieldName);
+          });
+        }
+      },
       child: TextField(
         controller: controller,
+        onChanged: (_) {
+          if (isTouched) {
+            setState(() {});
+          }
+        },
         decoration: InputDecoration(
           label: RichText(
             text: TextSpan(
@@ -435,10 +455,24 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
               ],
             ),
           ),
-          helperText: 'This is a required field',
-          helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+          errorText: showError ? 'This is a required field' : null,
+          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : Colors.grey,
+              width: showError ? 2 : 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : const Color(0xFF1976D2),
+              width: 2,
+            ),
           ),
         ),
       ),
@@ -446,41 +480,48 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   }
 
   // Password field with real-time validation checklist
-  Widget _buildPasswordFieldWithValidation(String label, TextEditingController controller) {
+  Widget _buildPasswordFieldWithValidation(String fieldName, String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: controller,
-          obscureText: _obscurePassword,
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            label: RichText(
-              text: TextSpan(
-                text: label,
-                style: const TextStyle(color: Colors.black87, fontSize: 16),
-                children: const [
-                  TextSpan(
-                    text: ' *',
-                    style: TextStyle(color: Colors.red, fontSize: 16),
-                  ),
-                ],
+        Focus(
+          onFocusChange: (hasFocus) {
+            if (!hasFocus) {
+              setState(() {
+                _touchedFields.add(fieldName);
+              });
+            }
+          },
+          child: TextField(
+            controller: controller,
+            obscureText: _obscurePassword,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              label: RichText(
+                text: TextSpan(
+                  text: label,
+                  style: const TextStyle(color: Colors.black87, fontSize: 16),
+                  children: const [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red, fontSize: 16),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            helperText: 'This is a required field',
-            helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
             ),
           ),
         ),
@@ -491,37 +532,69 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   }
 
   // Required password field (for confirm password)
-  Widget _buildRequiredPasswordField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      obscureText: _obscureConfirmPassword,
-      decoration: InputDecoration(
-        label: RichText(
-          text: TextSpan(
-            text: label,
-            style: const TextStyle(color: Colors.black87, fontSize: 16),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ],
+  Widget _buildRequiredPasswordField(String fieldName, String label, TextEditingController controller) {
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isTouched && isEmpty;
+
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setState(() {
+            _touchedFields.add(fieldName);
+          });
+        }
+      },
+      child: TextField(
+        controller: controller,
+        obscureText: _obscureConfirmPassword,
+        onChanged: (_) {
+          if (isTouched) {
+            setState(() {});
+          }
+        },
+        decoration: InputDecoration(
+          label: RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
+              children: const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ],
+            ),
           ),
-        ),
-        helperText: 'This is a required field',
-        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(
-            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+          errorText: showError ? 'This is a required field' : null,
+          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          onPressed: () {
-            setState(() {
-              _obscureConfirmPassword = !_obscureConfirmPassword;
-            });
-          },
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : Colors.grey,
+              width: showError ? 2 : 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : const Color(0xFF1976D2),
+              width: 2,
+            ),
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              });
+            },
+          ),
         ),
       ),
     );

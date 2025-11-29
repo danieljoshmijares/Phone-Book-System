@@ -16,6 +16,7 @@ class _LoginUserPageState extends State<LoginUserPage> {
   bool _obscurePassword = true;
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+  final Set<String> _touchedFields = {};
 
   @override
   void dispose() {
@@ -61,9 +62,9 @@ class _LoginUserPageState extends State<LoginUserPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildRequiredField('Email', emailCtrl),
+                      _buildRequiredField('email', 'Email', emailCtrl),
                       const SizedBox(height: 12),
-                      _buildRequiredPasswordField('Password', passwordCtrl),
+                      _buildRequiredPasswordField('password', 'Password', passwordCtrl),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -71,8 +72,11 @@ class _LoginUserPageState extends State<LoginUserPage> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                emailCtrl.clear();
-                                passwordCtrl.clear();
+                                setState(() {
+                                  emailCtrl.clear();
+                                  passwordCtrl.clear();
+                                  _touchedFields.clear();
+                                });
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey.shade700,
@@ -274,64 +278,128 @@ class _LoginUserPageState extends State<LoginUserPage> {
     );
   }
 
-  // Required field with red asterisk and helper text
-  Widget _buildRequiredField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        label: RichText(
-          text: TextSpan(
-            text: label,
-            style: const TextStyle(color: Colors.black87, fontSize: 16),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ],
+  // Required field with red asterisk and conditional error message
+  Widget _buildRequiredField(String fieldName, String label, TextEditingController controller) {
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isTouched && isEmpty;
+
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setState(() {
+            _touchedFields.add(fieldName);
+          });
+        }
+      },
+      child: TextField(
+        controller: controller,
+        onChanged: (_) {
+          if (isTouched) {
+            setState(() {});
+          }
+        },
+        decoration: InputDecoration(
+          label: RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
+              children: const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ],
+            ),
           ),
-        ),
-        helperText: 'This is a required field',
-        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          errorText: showError ? 'This is a required field' : null,
+          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : Colors.grey,
+              width: showError ? 2 : 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : const Color(0xFF1976D2),
+              width: 2,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // Required password field with red asterisk
-  Widget _buildRequiredPasswordField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      obscureText: _obscurePassword,
-      decoration: InputDecoration(
-        label: RichText(
-          text: TextSpan(
-            text: label,
-            style: const TextStyle(color: Colors.black87, fontSize: 16),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ],
+  // Required password field with red asterisk and conditional error message
+  Widget _buildRequiredPasswordField(String fieldName, String label, TextEditingController controller) {
+    final isTouched = _touchedFields.contains(fieldName);
+    final isEmpty = controller.text.trim().isEmpty;
+    final showError = isTouched && isEmpty;
+
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setState(() {
+            _touchedFields.add(fieldName);
+          });
+        }
+      },
+      child: TextField(
+        controller: controller,
+        obscureText: _obscurePassword,
+        onChanged: (_) {
+          if (isTouched) {
+            setState(() {});
+          }
+        },
+        decoration: InputDecoration(
+          label: RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
+              children: const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ],
+            ),
           ),
-        ),
-        helperText: 'This is a required field',
-        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(
-            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+          errorText: showError ? 'This is a required field' : null,
+          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          onPressed: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
-          },
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : Colors.grey,
+              width: showError ? 2 : 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: showError ? Colors.red : const Color(0xFF1976D2),
+              width: 2,
+            ),
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          ),
         ),
       ),
     );
