@@ -66,10 +66,13 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildField('Full Name', fullNameCtrl, isPassword: false),
-                      _buildField('Email', emailCtrl, isPassword: false),
-                      _buildPasswordField('Password', passwordCtrl),
-                      _buildPasswordField('Confirm Password', confirmPasswordCtrl, isConfirm: true),
+                      _buildRequiredField('Full Name', fullNameCtrl),
+                      const SizedBox(height: 12),
+                      _buildRequiredField('Email', emailCtrl),
+                      const SizedBox(height: 12),
+                      _buildPasswordFieldWithValidation('Password', passwordCtrl),
+                      const SizedBox(height: 12),
+                      _buildRequiredPasswordField('Confirm Password', confirmPasswordCtrl),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -138,6 +141,92 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                                   return;
                                 }
 
+                                // Password strength validation
+                                if (password.length < 8) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Weak Password'),
+                                      content: const Text('Password must be at least 8 characters long.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (!RegExp(r'[A-Z]').hasMatch(password)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Weak Password'),
+                                      content: const Text('Password must contain at least one uppercase letter.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (!RegExp(r'[a-z]').hasMatch(password)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Weak Password'),
+                                      content: const Text('Password must contain at least one lowercase letter.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (!RegExp(r'[0-9]').hasMatch(password)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Weak Password'),
+                                      content: const Text('Password must contain at least one number.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Weak Password'),
+                                      content: const Text('Password must contain at least one special character (!@#\$%^&*(),.?":{}|<>).'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 if (password != confirmPassword) {
                                   showDialog(
                                     context: context,
@@ -168,25 +257,36 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                                 if (result['success']) {
                                   showDialog(
                                     context: context,
+                                    barrierDismissible: false,
                                     builder: (context) => AlertDialog(
-                                      title: const Text('Success'),
-                                      content: const Text('Registration successful! Please login.'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => const LoginUserPage(),
-                                              ),
-                                            );
-                                          },
-                                          child: const Text('OK'),
-                                        ),
-                                      ],
+                                      backgroundColor: Colors.green.shade50,
+                                      title: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Success!',
+                                            style: TextStyle(color: Colors.green),
+                                          ),
+                                        ],
+                                      ),
+                                      content: const Text(
+                                        'Registration successful! Redirecting to login...',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
                                     ),
                                   );
+
+                                  // Auto-dismiss after 2 seconds
+                                  Future.delayed(const Duration(seconds: 2), () {
+                                    Navigator.pop(context); // Close dialog
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginUserPage(),
+                                      ),
+                                    );
+                                  });
                                 } else {
                                   showDialog(
                                     context: context,
@@ -313,6 +413,177 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
             },
           ),
         ),
+      ),
+    );
+  }
+
+  // Required field with red asterisk and helper text
+  Widget _buildRequiredField(String label, TextEditingController controller) {
+    return Focus(
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          label: RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
+              children: const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          helperText: 'This is a required field',
+          helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Password field with real-time validation checklist
+  Widget _buildPasswordFieldWithValidation(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: _obscurePassword,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            label: RichText(
+              text: TextSpan(
+                text: label,
+                style: const TextStyle(color: Colors.black87, fontSize: 16),
+                children: const [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Colors.red, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            helperText: 'This is a required field',
+            helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildPasswordChecklist(passwordCtrl.text),
+      ],
+    );
+  }
+
+  // Required password field (for confirm password)
+  Widget _buildRequiredPasswordField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      obscureText: _obscureConfirmPassword,
+      decoration: InputDecoration(
+        label: RichText(
+          text: TextSpan(
+            text: label,
+            style: const TextStyle(color: Colors.black87, fontSize: 16),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        helperText: 'This is a required field',
+        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+          ),
+          onPressed: () {
+            setState(() {
+              _obscureConfirmPassword = !_obscureConfirmPassword;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  // Password requirements checklist that updates in real-time
+  Widget _buildPasswordChecklist(String password) {
+    final hasMinLength = password.length >= 8;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+    final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+    final hasSpecial = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+    final meetsAll = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Password Requirements:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          _buildRequirementItem('Must meet all requirements below', meetsAll),
+          _buildRequirementItem('At least 8 characters', hasMinLength),
+          _buildRequirementItem('One uppercase letter (A-Z)', hasUppercase),
+          _buildRequirementItem('One lowercase letter (a-z)', hasLowercase),
+          _buildRequirementItem('One number (0-9)', hasNumber),
+          _buildRequirementItem('One special character (!@#\$%^&*)', hasSpecial),
+        ],
+      ),
+    );
+  }
+
+  // Individual requirement item with checkmark/X
+  Widget _buildRequirementItem(String text, bool isMet) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle : Icons.cancel,
+            color: isMet ? Colors.green : Colors.red,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: isMet ? Colors.green.shade700 : Colors.red.shade700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -61,8 +61,9 @@ class _LoginUserPageState extends State<LoginUserPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildField('Email', emailCtrl, isPassword: false),
-                      _buildPasswordField('Password', passwordCtrl),
+                      _buildRequiredField('Email', emailCtrl),
+                      const SizedBox(height: 12),
+                      _buildRequiredPasswordField('Password', passwordCtrl),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -121,10 +122,37 @@ class _LoginUserPageState extends State<LoginUserPage> {
                                 setState(() => _isLoading = false);
 
                                 if (result['success']) {
-                                  Navigator.of(context).pushNamedAndRemoveUntil(
-                                    '/home',
-                                    (route) => false,
+                                  // Show success notification
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => AlertDialog(
+                                      backgroundColor: Colors.green.shade50,
+                                      title: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Login Successful!',
+                                            style: TextStyle(color: Colors.green),
+                                          ),
+                                        ],
+                                      ),
+                                      content: const Text(
+                                        'Welcome back! Redirecting to your phonebook...',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                    ),
                                   );
+
+                                  // Auto-dismiss after 2 seconds
+                                  Future.delayed(const Duration(seconds: 2), () {
+                                    Navigator.pop(context); // Close dialog
+                                    Navigator.of(context).pushNamedAndRemoveUntil(
+                                      '/home',
+                                      (route) => false,
+                                    );
+                                  });
                                 } else {
                                   showDialog(
                                     context: context,
@@ -241,6 +269,69 @@ class _LoginUserPageState extends State<LoginUserPage> {
               });
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  // Required field with red asterisk and helper text
+  Widget _buildRequiredField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        label: RichText(
+          text: TextSpan(
+            text: label,
+            style: const TextStyle(color: Colors.black87, fontSize: 16),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        helperText: 'This is a required field',
+        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  // Required password field with red asterisk
+  Widget _buildRequiredPasswordField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        label: RichText(
+          text: TextSpan(
+            text: label,
+            style: const TextStyle(color: Colors.black87, fontSize: 16),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        helperText: 'This is a required field',
+        helperStyle: const TextStyle(color: Colors.red, fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+          ),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
         ),
       ),
     );

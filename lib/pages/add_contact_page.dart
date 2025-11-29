@@ -66,11 +66,15 @@ class _AddContactPageState extends State<AddContactPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildField('Full Name', nameCtrl),
-                  _buildField('Phone Number', numCtrl),
-                  _buildField('Tel. Number', telCtrl),
-                  _buildField('Home Address', addrCtrl),
-                  _buildField('Image URL (optional)', imageCtrl),
+                  _buildRequiredField('Full Name', nameCtrl, isRequired: true),
+                  const SizedBox(height: 12),
+                  _buildRequiredField('Phone Number', numCtrl, isRequired: true),
+                  const SizedBox(height: 12),
+                  _buildRequiredField('Tel. Number', telCtrl, isRequired: true),
+                  const SizedBox(height: 12),
+                  _buildRequiredField('Home Address', addrCtrl, isRequired: true),
+                  const SizedBox(height: 12),
+                  _buildRequiredField('Image URL', imageCtrl, isRequired: false),
                   const SizedBox(height: 16),
 
                   // Loop for all custom fields
@@ -303,6 +307,62 @@ class _AddContactPageState extends State<AddContactPage> {
           );
         },
       ),
+    );
+  }
+
+  // Required field with red asterisk for Add Contact
+  Widget _buildRequiredField(String label, TextEditingController controller, {required bool isRequired}) {
+    final isPhoneField = label.contains('Phone Number');
+    final isTelField = label.contains('Tel. Number');
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        return TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            label: isRequired
+                ? RichText(
+                    text: TextSpan(
+                      text: label,
+                      style: const TextStyle(color: Colors.black87, fontSize: 16),
+                      children: const [
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(color: Colors.red, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : Text(label),
+            helperText: isRequired ? 'This is a required field' : '(Optional)',
+            helperStyle: TextStyle(
+              color: isRequired ? Colors.red : Colors.grey,
+              fontSize: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            suffixIcon: value.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () => controller.clear(),
+                  )
+                : null,
+          ),
+          keyboardType: (isPhoneField || isTelField) ? TextInputType.phone : TextInputType.text,
+          inputFormatters: isPhoneField
+              ? [
+                  PhoneNumberFormatter(),
+                  LengthLimitingTextInputFormatter(13),
+                ]
+              : isTelField
+                  ? [
+                      TelephoneNumberFormatter(),
+                      LengthLimitingTextInputFormatter(8),
+                    ]
+                  : [],
+        );
+      },
     );
   }
 }
