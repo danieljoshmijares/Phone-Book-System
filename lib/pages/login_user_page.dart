@@ -246,6 +246,7 @@ class _LoginUserPageState extends State<LoginUserPage> {
           ),
         ),
       );
+  }
 
   Widget _buildField(String label, TextEditingController controller,
       {bool isPassword = false}) {
