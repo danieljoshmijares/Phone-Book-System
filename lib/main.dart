@@ -78,10 +78,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadContacts();
     _loadUserName();
-    // Apply default sort after contacts load
-    Future.delayed(Duration.zero, () {
-      if (mounted) _sortByNameAsc();
-    });
   }
 
   // Load user's full name
@@ -162,12 +158,35 @@ class _HomePageState extends State<HomePage> {
     final loadedContacts = await _firestoreService.loadContacts();
     setState(() {
       contacts = loadedContacts;
+      // Apply default sort (A-Z) after loading
+      currentSort = SortType.nameAsc;
+      contacts.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
     });
   }
 
   // Save contacts to Firestore
   Future<void> _saveContacts() async {
     await _firestoreService.saveContacts(contacts);
+  }
+
+  // Re-apply current sort (used after adding/editing contacts)
+  void _reapplyCurrentSort() {
+    switch (currentSort) {
+      case SortType.nameAsc:
+        contacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case SortType.nameDesc:
+        contacts.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
+      case SortType.phoneAsc:
+        contacts.sort((a, b) => a.number.compareTo(b.number));
+        break;
+      case SortType.phoneDesc:
+        contacts.sort((a, b) => b.number.compareTo(a.number));
+        break;
+    }
   }
 
   // ==================== NAVIGATION ====================
@@ -179,7 +198,10 @@ class _HomePageState extends State<HomePage> {
     if (newContact != null) {
       // Add to Firestore and get the document ID
       await _firestoreService.addContact(newContact);
-      setState(() => contacts.add(newContact));
+      setState(() {
+        contacts.add(newContact);
+        _reapplyCurrentSort(); // Re-sort after adding
+      });
     }
   }
 
@@ -218,6 +240,7 @@ class _HomePageState extends State<HomePage> {
         contact.address = updated.address;
         contact.imageUrl = updated.imageUrl;
         contact.customFields = Map<String, String>.from(updated.customFields);
+        _reapplyCurrentSort(); // Re-sort after editing (name/number might have changed)
       });
       // Update in Firestore by ID
       await _firestoreService.updateContact(contact);
