@@ -1,4 +1,5 @@
 class Contact {
+  String? id; // Firestore document ID
   String name;
   String number;
   String tel;
@@ -9,6 +10,7 @@ class Contact {
   Map<String, String> customFields;
 
   Contact({
+    this.id,
     required this.name,
     required this.number,
     required this.tel,
@@ -18,6 +20,7 @@ class Contact {
   }) : customFields = Map<String, String>.from(customFields ?? {});
 
   Contact copyWith({
+    String? id,
     String? name,
     String? number,
     String? tel,
@@ -26,6 +29,7 @@ class Contact {
     Map<String, String>? customFields,
   }) {
     return Contact(
+      id: id ?? this.id,
       name: name ?? this.name,
       number: number ?? this.number,
       tel: tel ?? this.tel,

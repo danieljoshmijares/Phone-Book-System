@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
     });
-    _saveContacts();
+    // No need to save - sorting is local only
   }
 
   void _sortByNameDesc() {
@@ -131,21 +131,21 @@ class _HomePageState extends State<HomePage> {
         (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
       );
     });
-    _saveContacts();
+    // No need to save - sorting is local only
   }
 
   void _sortByPhoneAsc() {
     setState(() {
       contacts.sort((a, b) => a.number.compareTo(b.number));
     });
-    _saveContacts();
+    // No need to save - sorting is local only
   }
 
   void _sortByPhoneDesc() {
     setState(() {
       contacts.sort((a, b) => b.number.compareTo(a.number));
     });
-    _saveContacts();
+    // No need to save - sorting is local only
   }
 
   // Load contacts from Firestore on startup
@@ -168,8 +168,9 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (context) => const AddContactPage()),
     );
     if (newContact != null) {
+      // Add to Firestore and get the document ID
+      await _firestoreService.addContact(newContact);
       setState(() => contacts.add(newContact));
-      await _saveContacts(); // Save after adding
     }
   }
 
@@ -179,11 +180,14 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(
         builder: (context) => ViewContactPage(
           contact: contact,
-          onDelete: () {
+          onDelete: () async {
+            // Delete from Firestore by ID
+            if (contact.id != null) {
+              await _firestoreService.deleteContact(contact.id!);
+            }
             setState(() {
               contacts.remove(contact); // remove the contact from the list
             });
-            _saveContacts(); // Save after deleting
           },
         ),
       ),
@@ -206,7 +210,8 @@ class _HomePageState extends State<HomePage> {
         contact.imageUrl = updated.imageUrl;
         contact.customFields = Map<String, String>.from(updated.customFields);
       });
-      await _saveContacts(); // Save after editing
+      // Update in Firestore by ID
+      await _firestoreService.updateContact(contact);
     }
   }
 
@@ -240,14 +245,30 @@ class _HomePageState extends State<HomePage> {
 
     // If confirmed, delete contacts
     if (confirm == true) {
+      // Collect contacts to delete
+      final contactsToDelete = selectedIndexes
+          .map((index) => contacts[index])
+          .toList();
+
+      // Collect their IDs for Firestore deletion
+      final idsToDelete = contactsToDelete
+          .where((contact) => contact.id != null)
+          .map((contact) => contact.id!)
+          .toList();
+
+      // Delete from Firestore
+      if (idsToDelete.isNotEmpty) {
+        await _firestoreService.deleteMultipleContacts(idsToDelete);
+      }
+
       setState(() {
-        contacts.removeWhere(
-          (contact) => selectedIndexes.contains(contacts.indexOf(contact)),
-        );
+        // Remove from local list
+        for (var contact in contactsToDelete) {
+          contacts.remove(contact);
+        }
         selectedIndexes.clear();
         isSelectionMode = false;
       });
-      _saveContacts(); // Save after bulk delete
     }
   }
 
