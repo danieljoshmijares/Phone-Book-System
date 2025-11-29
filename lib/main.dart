@@ -517,7 +517,6 @@ class _HomePageState extends State<HomePage> {
 
                     // My Contacts header with sort menu
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'My Contacts',
@@ -527,6 +526,7 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.white,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         // Sort menu button - always visible
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.sort, color: Colors.white, size: 28),

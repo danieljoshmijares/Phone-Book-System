@@ -19,6 +19,21 @@ class _LoginUserPageState extends State<LoginUserPage> {
   final Set<String> _touchedFields = {};
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset validation state if user navigated back with empty fields
+    if (emailCtrl.text.isEmpty && passwordCtrl.text.isEmpty && _touchedFields.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _touchedFields.clear();
+          });
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
     emailCtrl.dispose();
     passwordCtrl.dispose();
