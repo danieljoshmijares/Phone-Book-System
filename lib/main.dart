@@ -50,6 +50,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+enum SortType { nameAsc, nameDesc, phoneAsc, phoneDesc }
+
 class _HomePageState extends State<HomePage> {
   // ==================== VARIABLES ====================
   bool isSelectionMode = false;
@@ -68,11 +70,18 @@ class _HomePageState extends State<HomePage> {
   // User name
   String userName = 'User';
 
+  // Current sort type
+  SortType currentSort = SortType.nameAsc;
+
   @override
   void initState() {
     super.initState();
     _loadContacts();
     _loadUserName();
+    // Apply default sort after contacts load
+    Future.delayed(Duration.zero, () {
+      if (mounted) _sortByNameAsc();
+    });
   }
 
   // Load user's full name
@@ -118,34 +127,34 @@ class _HomePageState extends State<HomePage> {
 
   void _sortByNameAsc() {
     setState(() {
+      currentSort = SortType.nameAsc;
       contacts.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
     });
-    // No need to save - sorting is local only
   }
 
   void _sortByNameDesc() {
     setState(() {
+      currentSort = SortType.nameDesc;
       contacts.sort(
         (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
       );
     });
-    // No need to save - sorting is local only
   }
 
   void _sortByPhoneAsc() {
     setState(() {
+      currentSort = SortType.phoneAsc;
       contacts.sort((a, b) => a.number.compareTo(b.number));
     });
-    // No need to save - sorting is local only
   }
 
   void _sortByPhoneDesc() {
     setState(() {
+      currentSort = SortType.phoneDesc;
       contacts.sort((a, b) => b.number.compareTo(a.number));
     });
-    // No need to save - sorting is local only
   }
 
   // Load contacts from Firestore on startup
@@ -481,40 +490,6 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                         if (!isSelectionMode)
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.sort, color: Colors.white),
-                            color: Colors.white,
-                            onSelected: (value) {
-                              if (value == 'name_asc') {
-                                _sortByNameAsc();
-                              } else if (value == 'name_desc') {
-                                _sortByNameDesc();
-                              } else if (value == 'phone_asc') {
-                                _sortByPhoneAsc();
-                              } else if (value == 'phone_desc') {
-                                _sortByPhoneDesc();
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'name_asc',
-                                child: Text('Sort by Name (A–Z)'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'name_desc',
-                                child: Text('Sort by Name (Z–A)'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'phone_asc',
-                                child: Text('Sort by Phone (Ascending)'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'phone_desc',
-                                child: Text('Sort by Phone (Descending)'),
-                              ),
-                            ],
-                          ),
-                        if (!isSelectionMode)
                           ElevatedButton.icon(
                             onPressed: navigateToAddContact,
                             icon: const Icon(Icons.add, color: Colors.white),
@@ -540,13 +515,77 @@ class _HomePageState extends State<HomePage> {
 
                     const SizedBox(height: 16),
 
-                    const Text(
-                      'My Contacts',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    // My Contacts header with sort menu
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'My Contacts',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        // Sort menu button - always visible
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.sort, color: Colors.white, size: 28),
+                          color: Colors.white,
+                          onSelected: (value) {
+                            if (value == 'name_asc') {
+                              _sortByNameAsc();
+                            } else if (value == 'name_desc') {
+                              _sortByNameDesc();
+                            } else if (value == 'phone_asc') {
+                              _sortByPhoneAsc();
+                            } else if (value == 'phone_desc') {
+                              _sortByPhoneDesc();
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'name_asc',
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('Sort by Name (A–Z)')),
+                                  if (currentSort == SortType.nameAsc)
+                                    const Icon(Icons.check, color: Color(0xFF1976D2)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'name_desc',
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('Sort by Name (Z–A)')),
+                                  if (currentSort == SortType.nameDesc)
+                                    const Icon(Icons.check, color: Color(0xFF1976D2)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'phone_asc',
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('Sort by Phone (Ascending)')),
+                                  if (currentSort == SortType.phoneAsc)
+                                    const Icon(Icons.check, color: Color(0xFF1976D2)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'phone_desc',
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('Sort by Phone (Descending)')),
+                                  if (currentSort == SortType.phoneDesc)
+                                    const Icon(Icons.check, color: Color(0xFF1976D2)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
 
@@ -668,10 +707,65 @@ class _HomePageState extends State<HomePage> {
                                                   },
                                                 ),
                                               )
-                                            : _buildContactAvatar(contact),
+                                            : null,
 
-                                        title: Text(contact.name),
-                                        subtitle: Text(contact.number),
+                                        title: isSelectionMode
+                                            ? Row(
+                                                children: [
+                                                  _buildContactAvatar(contact),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          contact.name,
+                                                          style: const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 4),
+                                                        Text(
+                                                          contact.number,
+                                                          style: const TextStyle(
+                                                            fontSize: 14,
+                                                            color: Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : Row(
+                                                children: [
+                                                  _buildContactAvatar(contact),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          contact.name,
+                                                          style: const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 4),
+                                                        Text(
+                                                          contact.number,
+                                                          style: const TextStyle(
+                                                            fontSize: 14,
+                                                            color: Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
 
                                         trailing: !isSelectionMode
                                             ? IconButton(
