@@ -535,13 +535,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   final fullName = admin['fullName'] ?? 'No name';
                   final role = admin['role'] ?? 'admin';
                   final createdAt = admin['createdAt'] as Timestamp?;
+                  final disabled = admin['disabled'] ?? false;
 
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     color: role == 'superadmin' ? Colors.amber.shade50 : Colors.white,
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                        backgroundColor: disabled
+                            ? Colors.grey
+                            : (role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2)),
                         child: Icon(
                           role == 'superadmin' ? Icons.admin_panel_settings : Icons.manage_accounts,
                           color: Colors.white,
@@ -549,18 +552,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       title: Text(
                         fullName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          decoration: disabled ? TextDecoration.lineThrough : null,
+                        ),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(email),
-                          Chip(
-                            label: Text(
-                              role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
-                              style: const TextStyle(fontSize: 10, color: Colors.white),
-                            ),
-                            backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                          Row(
+                            children: [
+                              Chip(
+                                label: Text(
+                                  role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
+                                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                                ),
+                                backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                              ),
+                            ],
                           ),
                           if (createdAt != null)
                             Text(
@@ -571,9 +581,44 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       trailing: role == 'superadmin'
                           ? null
-                          : IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteAdmin(adminId, fullName),
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (disabled)
+                                  const Chip(
+                                    label: Text('DISABLED', style: TextStyle(fontSize: 10)),
+                                    backgroundColor: Colors.red,
+                                    labelStyle: TextStyle(color: Colors.white),
+                                  )
+                                else
+                                  const Chip(
+                                    label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
+                                    backgroundColor: Colors.green,
+                                    labelStyle: TextStyle(color: Colors.white),
+                                  ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () => _toggleAdminStatus(adminId, disabled, fullName),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: disabled ? Colors.green : Colors.orange,
+                                  ),
+                                  child: Text(
+                                    disabled ? 'Enable' : 'Disable',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () => _deleteAdmin(adminId, fullName),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   );
@@ -908,7 +953,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Admin'),
-        content: Text('Are you sure you want to delete admin "$adminName"?'),
+        content: Text('Are you sure you want to delete admin "$adminName"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -927,20 +972,102 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       try {
         await _firestore.collection('users').doc(adminId).delete();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Admin deleted successfully'),
-            backgroundColor: Colors.green,
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  'Deleted!',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ],
+            ),
+            content: Text(
+              'Admin "$adminName" has been deleted successfully.',
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
         );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
             content: Text('Failed to delete admin: $e'),
-            backgroundColor: Colors.red,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
+    }
+  }
+
+  Future<void> _toggleAdminStatus(String adminId, bool currentlyDisabled, String adminName) async {
+    try {
+      await _firestore.collection('users').doc(adminId).update({
+        'disabled': !currentlyDisabled,
+      });
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.green.shade50,
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+              const SizedBox(width: 8),
+              const Text(
+                'Success!',
+                style: TextStyle(color: Colors.green),
+              ),
+            ],
+          ),
+          content: Text(
+            currentlyDisabled
+                ? 'Admin "$adminName" has been enabled successfully.'
+                : 'Admin "$adminName" has been disabled successfully.',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+
+      // Auto-dismiss after 2 seconds
+      Future.delayed(const Duration(seconds: 2), () {
+        Navigator.pop(context);
+      });
+    } catch (e) {
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to update admin status: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
