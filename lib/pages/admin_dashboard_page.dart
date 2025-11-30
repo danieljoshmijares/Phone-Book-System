@@ -201,7 +201,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             stream: _firestore
                 .collection('users')
                 .where('role', isEqualTo: 'user')
-                .orderBy('createdAt', descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -212,7 +211,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 return const Center(child: Text('No users found'));
               }
 
-              final users = snapshot.data!.docs;
+              // Sort in-memory by createdAt (newest first)
+              final users = snapshot.data!.docs.toList()
+                ..sort((a, b) {
+                  final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                  final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                  if (aTime == null || bTime == null) return 0;
+                  return bTime.compareTo(aTime); // Descending order
+                });
 
               return ListView.builder(
                 itemCount: users.length,
@@ -310,8 +316,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             stream: _firestore
                 .collection('activityLogs')
                 .where('role', isEqualTo: 'user') // Only show user activities
-                .orderBy('timestamp', descending: true)
-                .limit(100)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -322,12 +326,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 return const Center(child: Text('No activity logs found'));
               }
 
-              final logs = snapshot.data!.docs;
+              // Sort in-memory by timestamp (newest first) and limit to 100
+              final logs = snapshot.data!.docs.toList()
+                ..sort((a, b) {
+                  final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                  final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                  if (aTime == null || bTime == null) return 0;
+                  return bTime.compareTo(aTime); // Descending order
+                });
+
+              // Limit to 100 most recent
+              final limitedLogs = logs.take(100).toList();
 
               return ListView.builder(
-                itemCount: logs.length,
+                itemCount: limitedLogs.length,
                 itemBuilder: (context, index) {
-                  final log = logs[index].data() as Map<String, dynamic>;
+                  final log = limitedLogs[index].data() as Map<String, dynamic>;
                   final timestamp = log['timestamp'] as Timestamp?;
                   final email = log['email'] ?? 'Unknown';
                   final fullName = log['fullName'] ?? 'Unknown';
@@ -400,7 +414,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             stream: _firestore
                 .collection('users')
                 .where('role', whereIn: ['admin', 'superadmin'])
-                .orderBy('createdAt', descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -411,7 +424,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 return const Center(child: Text('No admins found'));
               }
 
-              final admins = snapshot.data!.docs;
+              // Sort in-memory by createdAt (newest first)
+              final admins = snapshot.data!.docs.toList()
+                ..sort((a, b) {
+                  final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                  final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                  if (aTime == null || bTime == null) return 0;
+                  return bTime.compareTo(aTime); // Descending order
+                });
 
               return ListView.builder(
                 itemCount: admins.length,
@@ -506,81 +526,94 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final emailCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
+    bool obscurePassword = true;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Admin Account'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Full Name',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create Admin Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setDialogState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty ||
+                    emailCtrl.text.trim().isEmpty ||
+                    passwordCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All fields are required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                final result = await _authService.register(
+                  email: emailCtrl.text.trim(),
+                  password: passwordCtrl.text.trim(),
+                  fullName: nameCtrl.text.trim(),
+                  role: 'admin',
+                );
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(result['message']),
+                    backgroundColor: result['success'] ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1976D2),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-              ),
+              child: const Text('Create', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty ||
-                  emailCtrl.text.trim().isEmpty ||
-                  passwordCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('All fields are required'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              final result = await _authService.register(
-                email: emailCtrl.text.trim(),
-                password: passwordCtrl.text.trim(),
-                fullName: nameCtrl.text.trim(),
-                role: 'admin',
-              );
-
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(result['message']),
-                  backgroundColor: result['success'] ? Colors.green : Colors.red,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1976D2),
-            ),
-            child: const Text('Create', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
