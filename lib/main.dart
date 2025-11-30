@@ -874,6 +874,16 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // First page button
+                            IconButton(
+                              onPressed: currentPage > 1
+                                  ? () => setState(() => currentPage = 1)
+                                  : null,
+                              icon: const Icon(Icons.first_page),
+                              color: Colors.white,
+                              disabledColor: Colors.grey,
+                            ),
+
                             // Previous button
                             IconButton(
                               onPressed: currentPage > 1
@@ -895,6 +905,16 @@ class _HomePageState extends State<HomePage> {
                                   ? () => setState(() => currentPage++)
                                   : null,
                               icon: const Icon(Icons.chevron_right),
+                              color: Colors.white,
+                              disabledColor: Colors.grey,
+                            ),
+
+                            // Last page button
+                            IconButton(
+                              onPressed: currentPage < totalPages
+                                  ? () => setState(() => currentPage = totalPages)
+                                  : null,
+                              icon: const Icon(Icons.last_page),
                               color: Colors.white,
                               disabledColor: Colors.grey,
                             ),
