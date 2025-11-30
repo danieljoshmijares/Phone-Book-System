@@ -18,6 +18,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   String adminName = 'Admin';
   int selectedTab = 0; // 0: Users, 1: Activity Logs, 2: Manage Admins (superadmin only)
 
+  // Pagination
+  int usersCurrentPage = 1;
+  int logsCurrentPage = 1;
+  int adminsCurrentPage = 1;
+  final int itemsPerPage = 10;
+
   @override
   void initState() {
     super.initState();
@@ -212,7 +218,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               // Filter for users only (role == 'user' or no role field for old users)
               // Sort in-memory by createdAt (newest first)
-              final users = snapshot.data!.docs.where((doc) {
+              final allUsers = snapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final role = data['role'];
                 return role == null || role == 'user'; // Include old users without role
@@ -224,17 +230,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   return bTime.compareTo(aTime); // Descending order
                 });
 
-              return ListView.builder(
-                itemCount: users.length,
-                itemBuilder: (context, index) {
-                  final user = users[index].data() as Map<String, dynamic>;
-                  final userId = users[index].id;
-                  final email = user['email'] ?? 'No email';
-                  final fullName = user['fullName'] ?? 'No name';
-                  final createdAt = user['createdAt'] as Timestamp?;
-                  final disabled = user['disabled'] ?? false;
+              // Pagination
+              final totalPages = (allUsers.length / itemsPerPage).ceil();
+              final startIndex = (usersCurrentPage - 1) * itemsPerPage;
+              final endIndex = (startIndex + itemsPerPage).clamp(0, allUsers.length);
+              final paginatedUsers = allUsers.sublist(
+                startIndex.clamp(0, allUsers.length),
+                endIndex,
+              );
 
-                  return Card(
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: paginatedUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = paginatedUsers[index].data() as Map<String, dynamic>;
+                        final userId = paginatedUsers[index].id;
+                        final email = user['email'] ?? 'No email';
+                        final fullName = user['fullName'] ?? 'No name';
+                        final createdAt = user['createdAt'] as Timestamp?;
+                        final disabled = user['disabled'] ?? false;
+
+                        return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: ListTile(
                       leading: CircleAvatar(
@@ -303,7 +321,63 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                     ),
                   );
-                },
+                      },
+                    ),
+                  ),
+
+                  // Pagination controls
+                  if (totalPages > 1)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // First page
+                          IconButton(
+                            onPressed: usersCurrentPage > 1
+                                ? () => setState(() => usersCurrentPage = 1)
+                                : null,
+                            icon: const Icon(Icons.first_page),
+                            color: Colors.black87,
+                            disabledColor: Colors.grey,
+                          ),
+                          // Previous
+                          IconButton(
+                            onPressed: usersCurrentPage > 1
+                                ? () => setState(() => usersCurrentPage--)
+                                : null,
+                            icon: const Icon(Icons.chevron_left),
+                            color: Colors.black87,
+                            disabledColor: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          // Page numbers
+                          ..._buildPageNumbers(usersCurrentPage, totalPages, (page) {
+                            setState(() => usersCurrentPage = page);
+                          }),
+                          const SizedBox(width: 8),
+                          // Next
+                          IconButton(
+                            onPressed: usersCurrentPage < totalPages
+                                ? () => setState(() => usersCurrentPage++)
+                                : null,
+                            icon: const Icon(Icons.chevron_right),
+                            color: Colors.black87,
+                            disabledColor: Colors.grey,
+                          ),
+                          // Last page
+                          IconButton(
+                            onPressed: usersCurrentPage < totalPages
+                                ? () => setState(() => usersCurrentPage = totalPages)
+                                : null,
+                            icon: const Icon(Icons.last_page),
+                            color: Colors.black87,
+                            disabledColor: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               );
             },
           ),
@@ -868,5 +942,55 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         );
       }
     }
+  }
+
+  // Build page number buttons (max 5 visible)
+  List<Widget> _buildPageNumbers(int currentPage, int totalPages, Function(int) onPageSelected) {
+    List<Widget> pageButtons = [];
+
+    // Calculate range of pages to show (max 5)
+    int startPage = currentPage - 2;
+    int endPage = currentPage + 2;
+
+    if (startPage < 1) {
+      startPage = 1;
+      endPage = (totalPages < 5) ? totalPages : 5;
+    }
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = (totalPages < 5) ? 1 : totalPages - 4;
+    }
+
+    for (int i = startPage; i <= endPage; i++) {
+      final isCurrentPage = i == currentPage;
+      pageButtons.add(
+        GestureDetector(
+          onTap: () => onPageSelected(i),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isCurrentPage ? const Color(0xFF1976D2) : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isCurrentPage ? const Color(0xFF1976D2) : Colors.grey.shade400,
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '$i',
+              style: TextStyle(
+                color: isCurrentPage ? Colors.white : Colors.black87,
+                fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.normal,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return pageButtons;
   }
 }
