@@ -537,90 +537,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   // USERS TAB
   Widget _buildUsersTab() {
-    return Column(
+    return Stack(
       children: [
-        const Text(
-          'User Management',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Action buttons (when in selection mode)
-        if (usersSelectionMode) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    selectedUserIndexes.clear();
-                    usersSelectionMode = false;
-                  });
-                },
-                icon: const Icon(Icons.close, color: Colors.white),
-                label: const Text('Cancel', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: selectedUserIndexes.isEmpty ? null : () => _bulkToggleUserStatus(true),
-                icon: const Icon(Icons.check_circle, color: Colors.white),
-                label: const Text('Enable', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: selectedUserIndexes.isEmpty ? null : () => _bulkToggleUserStatus(false),
-                icon: const Icon(Icons.cancel, color: Colors.white),
-                label: const Text('Disable', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: selectedUserIndexes.isEmpty ? null : _bulkDeleteUsers,
-                icon: const Icon(Icons.delete, color: Colors.white),
-                label: const Text('Delete', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // Selected count
-        if (usersSelectionMode)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                '${selectedUserIndexes.length} selected',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+        Column(
+          children: [
+            const Text(
+              'User Management',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+            const SizedBox(height: 16),
 
-        // User list
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
+            // Selected count (when in selection mode)
+            if (usersSelectionMode)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '${selectedUserIndexes.length} selected',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+
+            // User list
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('users')
                 .snapshots(),
@@ -805,6 +753,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                               'Created: ${_formatTimestamp(createdAt)}',
                                               style: const TextStyle(fontSize: 12, color: Colors.grey),
                                             ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              if (disabled)
+                                                const Chip(
+                                                  label: Text('DISABLED', style: TextStyle(fontSize: 10)),
+                                                  backgroundColor: Colors.red,
+                                                  labelStyle: TextStyle(color: Colors.white),
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                )
+                                              else
+                                                const Chip(
+                                                  label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
+                                                  backgroundColor: Colors.green,
+                                                  labelStyle: TextStyle(color: Colors.white),
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                            ],
+                                          ),
                                         ],
                                       ),
                                       trailing: usersSelectionMode
@@ -812,19 +781,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                           : Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                if (disabled)
-                                                  const Chip(
-                                                    label: Text('DISABLED', style: TextStyle(fontSize: 10)),
-                                                    backgroundColor: Colors.red,
-                                                    labelStyle: TextStyle(color: Colors.white),
-                                                  )
-                                                else
-                                                  const Chip(
-                                                    label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
-                                                    backgroundColor: Colors.green,
-                                                    labelStyle: TextStyle(color: Colors.white),
-                                                  ),
-                                                const SizedBox(width: 8),
                                                 IconButton(
                                                   onPressed: () => _toggleUserStatus(userId, disabled, fullName),
                                                   icon: Icon(
@@ -923,6 +879,74 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
       ],
+    ),
+        // Floating Action Button (when in selection mode)
+        if (usersSelectionMode)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _showUsersBulkActionsSheet,
+              backgroundColor: const Color(0xFF1976D2),
+              icon: const Icon(Icons.menu, color: Colors.white),
+              label: const Text(
+                'Actions',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Show bottom sheet with bulk actions for users
+  void _showUsersBulkActionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.check_circle, color: Colors.green),
+              title: const Text('Enable Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkToggleUserStatus(true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel, color: Colors.orange),
+              title: const Text('Disable Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkToggleUserStatus(false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkDeleteUsers();
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.close, color: Colors.grey),
+              title: const Text('Cancel'),
+              onTap: () {
+                setState(() {
+                  selectedUserIndexes.clear();
+                  usersSelectionMode = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
