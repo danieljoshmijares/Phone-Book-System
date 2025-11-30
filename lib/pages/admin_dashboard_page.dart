@@ -279,13 +279,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: () => _toggleUserStatus(userId, disabled),
+                            onPressed: () => _toggleUserStatus(userId, disabled, fullName),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: disabled ? Colors.green : Colors.orange,
                             ),
                             child: Text(
                               disabled ? 'Enable' : 'Disable',
                               style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _deleteUser(userId, fullName),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ],
@@ -508,25 +519,127 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _toggleUserStatus(String userId, bool currentlyDisabled) async {
+  Future<void> _toggleUserStatus(String userId, bool currentlyDisabled, String userName) async {
     try {
       await _firestore.collection('users').doc(userId).update({
         'disabled': !currentlyDisabled,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(currentlyDisabled ? 'User enabled successfully' : 'User disabled successfully'),
-          backgroundColor: Colors.green,
+      // Show success dialog (like login success)
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.green.shade50,
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+              const SizedBox(width: 8),
+              const Text(
+                'Success!',
+                style: TextStyle(color: Colors.green),
+              ),
+            ],
+          ),
+          content: Text(
+            currentlyDisabled
+                ? 'User "$userName" has been enabled successfully.'
+                : 'User "$userName" has been disabled successfully.',
+            style: const TextStyle(fontSize: 16),
+          ),
         ),
       );
+
+      // Auto-dismiss after 2 seconds
+      Future.delayed(const Duration(seconds: 2), () {
+        Navigator.pop(context);
+      });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
           content: Text('Failed to update user status: $e'),
-          backgroundColor: Colors.red,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
+    }
+  }
+
+  Future<void> _deleteUser(String userId, String userName) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete User'),
+        content: Text('Are you sure you want to delete user "$userName"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _firestore.collection('users').doc(userId).delete();
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  'Deleted!',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ],
+            ),
+            content: Text(
+              'User "$userName" has been deleted successfully.',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } catch (e) {
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to delete user: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
