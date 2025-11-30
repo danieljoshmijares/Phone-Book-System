@@ -26,6 +26,7 @@ class AuthService {
     required String email,
     required String password,
     required String fullName,
+    String role = 'user', // Default role is 'user'
   }) async {
     try {
       // Create user in Firebase Auth
@@ -36,13 +37,23 @@ class AuthService {
 
       User? user = result.user;
 
-      // Save user's full name to Firestore
+      // Save user's full name and role to Firestore
       if (user != null) {
         await _firestore.collection('users').doc(user.uid).set({
           'fullName': fullName,
           'email': email,
+          'role': role,
           'createdAt': FieldValue.serverTimestamp(),
+          'disabled': false, // Track if account is disabled
         });
+
+        // Log registration activity
+        await _logActivity(
+          email: email,
+          fullName: fullName,
+          role: role,
+          action: 'register',
+        );
       }
 
       return {'success': true, 'message': 'Registration successful'};
@@ -66,10 +77,32 @@ class AuthService {
     required String password,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      User? user = result.user;
+
+      if (user != null) {
+        // Check if account is disabled in Firestore
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        final userData = doc.data();
+
+        if (userData != null && userData['disabled'] == true) {
+          await _auth.signOut(); // Sign out immediately
+          return {'success': false, 'message': 'This account has been disabled by an administrator'};
+        }
+
+        // Log login activity
+        await _logActivity(
+          email: userData?['email'] ?? email,
+          fullName: userData?['fullName'] ?? 'User',
+          role: userData?['role'] ?? 'user',
+          action: 'login',
+        );
+      }
+
       return {'success': true, 'message': 'Login successful'};
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -100,5 +133,68 @@ class AuthService {
   // Get user ID
   String? getUserId() {
     return _auth.currentUser?.uid;
+  }
+
+  // Get current user's role
+  Future<String> getUserRole() async {
+    final user = _auth.currentUser;
+    if (user == null) return 'user';
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.data()?['role'] ?? 'user'; // Default to 'user' if no role field
+    } catch (e) {
+      return 'user';
+    }
+  }
+
+  // Log activity (register/login)
+  Future<void> _logActivity({
+    required String email,
+    required String fullName,
+    required String role,
+    required String action,
+  }) async {
+    try {
+      await _firestore.collection('activityLogs').add({
+        'email': email,
+        'fullName': fullName,
+        'role': role,
+        'action': action,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Failed to log activity: $e');
+    }
+  }
+
+  // Initialize Super Admin with hardcoded credentials
+  // Email: superadmin@phonebook.com
+  // Password: SuperAdmin2025!
+  Future<void> initializeSuperAdmin() async {
+    const superAdminEmail = 'superadmin@phonebook.com';
+    const superAdminPassword = 'SuperAdmin2025!';
+    const superAdminName = 'Super Administrator';
+
+    try {
+      // Check if Super Admin already exists
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: superAdminEmail)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        // Create Super Admin account
+        await register(
+          email: superAdminEmail,
+          password: superAdminPassword,
+          fullName: superAdminName,
+          role: 'superadmin',
+        );
+        print('Super Admin account created successfully');
+      }
+    } catch (e) {
+      print('Super Admin initialization failed: $e');
+    }
   }
 }

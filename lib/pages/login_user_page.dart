@@ -136,6 +136,23 @@ class _LoginUserPageState extends State<LoginUserPage> {
                                 setState(() => _isLoading = false);
 
                                 if (result['success']) {
+                                  // Check user role and route accordingly
+                                  final role = await _authService.getUserRole();
+
+                                  String redirectMessage;
+                                  String redirectRoute;
+
+                                  if (role == 'superadmin') {
+                                    redirectMessage = 'Welcome back, Super Admin!';
+                                    redirectRoute = '/superadmin';
+                                  } else if (role == 'admin') {
+                                    redirectMessage = 'Welcome back, Admin!';
+                                    redirectRoute = '/admin';
+                                  } else {
+                                    redirectMessage = 'Welcome back! Redirecting to your phonebook...';
+                                    redirectRoute = '/home';
+                                  }
+
                                   // Show success notification
                                   showDialog(
                                     context: context,
@@ -152,9 +169,9 @@ class _LoginUserPageState extends State<LoginUserPage> {
                                           ),
                                         ],
                                       ),
-                                      content: const Text(
-                                        'Welcome back! Redirecting to your phonebook...',
-                                        style: TextStyle(fontSize: 16),
+                                      content: Text(
+                                        redirectMessage,
+                                        style: const TextStyle(fontSize: 16),
                                       ),
                                     ),
                                   );
@@ -163,7 +180,7 @@ class _LoginUserPageState extends State<LoginUserPage> {
                                   Future.delayed(const Duration(seconds: 2), () {
                                     Navigator.pop(context); // Close dialog
                                     Navigator.of(context).pushNamedAndRemoveUntil(
-                                      '/home',
+                                      redirectRoute,
                                       (route) => false,
                                     );
                                   });

@@ -8,12 +8,18 @@ import 'pages/add_contact_page.dart';
 import 'pages/edit_contact_page.dart';
 import 'pages/view_contact_page.dart';
 import 'pages/login_user_page.dart';
+import 'pages/admin_dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Super Admin account if it doesn't exist
+  final authService = AuthService();
+  await authService.initializeSuperAdmin();
+
   runApp(const MyApp());
 }
 
@@ -38,6 +44,8 @@ class MyApp extends StatelessWidget {
       home: const LoginUserPage(), //START APP WITH LOGIN PAGE
       routes: {
         '/home': (context) => const HomePage(),
+        '/admin': (context) => const AdminDashboardPage(adminRole: 'admin'),
+        '/superadmin': (context) => const AdminDashboardPage(adminRole: 'superadmin'),
       },
     );
   }
