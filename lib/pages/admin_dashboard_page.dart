@@ -200,7 +200,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('users')
-                .where('role', isEqualTo: 'user')
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -211,8 +210,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 return const Center(child: Text('No users found'));
               }
 
+              // Filter for users only (role == 'user' or no role field for old users)
               // Sort in-memory by createdAt (newest first)
-              final users = snapshot.data!.docs.toList()
+              final users = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final role = data['role'];
+                return role == null || role == 'user'; // Include old users without role
+              }).toList()
                 ..sort((a, b) {
                   final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
                   final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
@@ -315,7 +319,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('activityLogs')
-                .where('role', isEqualTo: 'user') // Only show user activities
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -326,8 +329,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 return const Center(child: Text('No activity logs found'));
               }
 
+              // Filter for user activities only (role == 'user' or no role for old logs)
               // Sort in-memory by timestamp (newest first) and limit to 100
-              final logs = snapshot.data!.docs.toList()
+              final logs = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final role = data['role'];
+                return role == null || role == 'user'; // Include old logs without role
+              }).toList()
                 ..sort((a, b) {
                   final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
                   final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
