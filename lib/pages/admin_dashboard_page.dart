@@ -133,19 +133,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
               ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
-                    radius: 40,
+                    radius: 35,
                     backgroundColor: Colors.white,
                     child: Icon(
                       isSuperAdmin ? Icons.admin_panel_settings : Icons.manage_accounts,
-                      size: 50,
+                      size: 45,
                       color: const Color(0xFF1976D2),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     adminName,
                     style: const TextStyle(
@@ -153,8 +154,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     isSuperAdmin ? 'Super Admin' : 'Admin',
                     style: const TextStyle(

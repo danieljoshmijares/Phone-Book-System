@@ -282,19 +282,20 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
               ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const CircleAvatar(
-                    radius: 40,
+                    radius: 35,
                     backgroundColor: Colors.white,
                     child: Icon(
                       Icons.person,
-                      size: 50,
+                      size: 45,
                       color: Color(0xFF1976D2),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     userName,
                     style: const TextStyle(
@@ -302,8 +303,9 @@ class _HomePageState extends State<HomePage> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   const Text(
                     'User',
                     style: TextStyle(
