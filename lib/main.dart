@@ -73,6 +73,10 @@ class _HomePageState extends State<HomePage> {
   // Current sort type
   SortType currentSort = SortType.nameAsc;
 
+  // Pagination
+  int currentPage = 1;
+  int contactsPerPage = 10;
+
   @override
   void initState() {
     super.initState();
@@ -311,6 +315,23 @@ class _HomePageState extends State<HomePage> {
       return contact.name.toLowerCase().contains(query) ||
           contact.number.toLowerCase().contains(query);
     }).toList();
+
+    // Pagination logic
+    final isSearching = searchQuery.isNotEmpty;
+    final int totalPages = isSearching ? 1 : (filteredContacts.length / contactsPerPage).ceil();
+
+    // Get paginated contacts (bypass pagination when searching)
+    final paginatedContacts = isSearching
+        ? filteredContacts
+        : () {
+            int startIndex = (currentPage - 1) * contactsPerPage;
+            int endIndex = startIndex + contactsPerPage;
+
+            if (startIndex >= filteredContacts.length) return <Contact>[];
+            if (endIndex > filteredContacts.length) endIndex = filteredContacts.length;
+
+            return filteredContacts.sublist(startIndex, endIndex);
+          }();
 
     return Scaffold(
       appBar: AppBar(
@@ -616,43 +637,56 @@ class _HomePageState extends State<HomePage> {
                     if (isSelectionMode)
                       Padding(
                         padding: const EdgeInsets.only(left: 4, bottom: 8),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: selectedIndexes.length == contacts.length && contacts.isNotEmpty,
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value == true) {
-                                    // Select all contacts
-                                    selectedIndexes = Set.from(
-                                      List.generate(contacts.length, (index) => index),
-                                    );
-                                  } else {
-                                    // Deselect all
-                                    selectedIndexes.clear();
-                                    isSelectionMode = false;
-                                  }
-                                });
-                              },
-                            ),
-                            const Text(
-                              'Select All',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                        child: Builder(
+                          builder: (context) {
+                            // Get the real indices of contacts on current page
+                            final currentPageIndices = paginatedContacts
+                                .map((contact) => contacts.indexOf(contact))
+                                .toSet();
+
+                            // Check if all contacts on current page are selected
+                            final allCurrentPageSelected = paginatedContacts.isNotEmpty &&
+                                currentPageIndices.every((index) => selectedIndexes.contains(index));
+
+                            return Row(
+                              children: [
+                                Checkbox(
+                                  value: allCurrentPageSelected,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        // Select all contacts on current page only
+                                        selectedIndexes.addAll(currentPageIndices);
+                                      } else {
+                                        // Deselect all contacts on current page
+                                        selectedIndexes.removeAll(currentPageIndices);
+                                        if (selectedIndexes.isEmpty) {
+                                          isSelectionMode = false;
+                                        }
+                                      }
+                                    });
+                                  },
+                                ),
+                                const Text(
+                                  'Select All',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
 
                     // ==================== CONTACT LIST ====================
                     Expanded(
                       child: ListView.builder(
-                        itemCount: filteredContacts.length,
+                        itemCount: paginatedContacts.length,
                         itemBuilder: (context, index) {
-                          final contact = filteredContacts[index];
+                          final contact = paginatedContacts[index];
                           final realIndex = contacts.indexOf(contact);
                           final isSelected = selectedIndexes.contains(
                             realIndex,
@@ -832,6 +866,41 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                     ),
+
+                    // ==================== PAGINATION ====================
+                    if (!isSearching && totalPages > 1)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Previous button
+                            IconButton(
+                              onPressed: currentPage > 1
+                                  ? () => setState(() => currentPage--)
+                                  : null,
+                              icon: const Icon(Icons.chevron_left),
+                              color: Colors.white,
+                              disabledColor: Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Page numbers
+                            ..._buildPageNumbers(totalPages),
+
+                            const SizedBox(width: 8),
+                            // Next button
+                            IconButton(
+                              onPressed: currentPage < totalPages
+                                  ? () => setState(() => currentPage++)
+                                  : null,
+                              icon: const Icon(Icons.chevron_right),
+                              color: Colors.white,
+                              disabledColor: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -840,5 +909,55 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  // Build page number buttons (max 5 visible)
+  List<Widget> _buildPageNumbers(int totalPages) {
+    List<Widget> pageButtons = [];
+
+    // Calculate range of pages to show (max 5)
+    int startPage = currentPage - 2;
+    int endPage = currentPage + 2;
+
+    if (startPage < 1) {
+      startPage = 1;
+      endPage = (totalPages < 5) ? totalPages : 5;
+    }
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = (totalPages < 5) ? 1 : totalPages - 4;
+    }
+
+    for (int i = startPage; i <= endPage; i++) {
+      final isCurrentPage = i == currentPage;
+      pageButtons.add(
+        GestureDetector(
+          onTap: () => setState(() => currentPage = i),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isCurrentPage ? const Color(0xFF1976D2) : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '$i',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.normal,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return pageButtons;
   }
 }
