@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -168,13 +169,17 @@ class AuthService {
     }
   }
 
-  // Initialize Super Admin with hardcoded credentials
-  // Email: superadmin@phonebook.com
-  // Password: SuperAdmin2025!
+  // Initialize Super Admin with credentials from .env file
   Future<void> initializeSuperAdmin() async {
-    const superAdminEmail = 'superadmin@phonebook.com';
-    const superAdminPassword = 'SuperAdmin2025!';
+    final superAdminEmail = dotenv.env['SUPER_ADMIN_EMAIL'] ?? '';
+    final superAdminPassword = dotenv.env['SUPER_ADMIN_PASSWORD'] ?? '';
     const superAdminName = 'Super Administrator';
+
+    // Validate credentials are loaded
+    if (superAdminEmail.isEmpty || superAdminPassword.isEmpty) {
+      print('ERROR: Super Admin credentials not found in .env file');
+      return;
+    }
 
     try {
       // Check if Super Admin already exists
