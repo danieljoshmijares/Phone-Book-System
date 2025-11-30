@@ -755,20 +755,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     color: tileColor,
                                     child: ListTile(
                                       leading: usersSelectionMode
-                                          ? Checkbox(
-                                              value: isSelected,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  if (value == true) {
-                                                    selectedUserIndexes.add(realIndex);
-                                                  } else {
-                                                    selectedUserIndexes.remove(realIndex);
-                                                    if (selectedUserIndexes.isEmpty) {
-                                                      usersSelectionMode = false;
-                                                    }
-                                                  }
-                                                });
-                                              },
+                                          ? Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Checkbox(
+                                                  value: isSelected,
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      if (value == true) {
+                                                        selectedUserIndexes.add(realIndex);
+                                                      } else {
+                                                        selectedUserIndexes.remove(realIndex);
+                                                        if (selectedUserIndexes.isEmpty) {
+                                                          usersSelectionMode = false;
+                                                        }
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                                CircleAvatar(
+                                                  backgroundColor: disabled ? Colors.grey : const Color(0xFF1976D2),
+                                                  child: Text(
+                                                    fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                                                    style: const TextStyle(color: Colors.white),
+                                                  ),
+                                                ),
+                                              ],
                                             )
                                           : CircleAvatar(
                                               backgroundColor: disabled ? Colors.grey : const Color(0xFF1976D2),
@@ -813,26 +825,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                     labelStyle: TextStyle(color: Colors.white),
                                                   ),
                                                 const SizedBox(width: 8),
-                                                ElevatedButton(
+                                                IconButton(
                                                   onPressed: () => _toggleUserStatus(userId, disabled, fullName),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: disabled ? Colors.green : Colors.orange,
+                                                  icon: Icon(
+                                                    disabled ? Icons.check_circle : Icons.cancel,
+                                                    color: disabled ? Colors.green : Colors.orange,
                                                   ),
-                                                  child: Text(
-                                                    disabled ? 'Enable' : 'Disable',
-                                                    style: const TextStyle(color: Colors.white),
-                                                  ),
+                                                  tooltip: disabled ? 'Enable' : 'Disable',
                                                 ),
-                                                const SizedBox(width: 8),
-                                                ElevatedButton(
+                                                IconButton(
                                                   onPressed: () => _deleteUser(userId, fullName),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                  child: const Text(
-                                                    'Delete',
-                                                    style: TextStyle(color: Colors.white),
-                                                  ),
+                                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                                  tooltip: 'Delete',
                                                 ),
                                               ],
                                             ),
