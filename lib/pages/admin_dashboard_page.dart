@@ -16,7 +16,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String adminName = 'Admin';
-  int selectedTab = 0; // 0: Users, 1: Activity Logs, 2: Manage Admins (superadmin only)
+  int selectedTab = 0; // 0: Home, 1: Users, 2: Activity Logs, 3: Manage Admins (superadmin only)
 
   // Pagination
   int usersCurrentPage = 1;
@@ -118,16 +118,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildTabButton('Users', 0),
+                            child: _buildTabButton('Home', 0),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildTabButton('Activity Logs', 1),
+                            child: _buildTabButton('Users', 1),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildTabButton('Activity Logs', 2),
                           ),
                           if (isSuperAdmin) ...[
                             const SizedBox(width: 8),
                             Expanded(
-                              child: _buildTabButton('Manage Admins', 2),
+                              child: _buildTabButton('Manage Admins', 3),
                             ),
                           ],
                         ],
@@ -178,14 +182,233 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildTabContent() {
     switch (selectedTab) {
       case 0:
-        return _buildUsersTab();
+        return _buildHomeTab();
       case 1:
-        return _buildActivityLogsTab();
+        return _buildUsersTab();
       case 2:
+        return _buildActivityLogsTab();
+      case 3:
         return _buildManageAdminsTab();
       default:
         return const SizedBox();
     }
+  }
+
+  // HOME TAB (Analytics Dashboard)
+  Widget _buildHomeTab() {
+    final isSuperAdmin = widget.adminRole == 'superadmin';
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore.collection('users').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final allUsers = snapshot.data!.docs;
+
+        // Filter regular users (role == 'user' or null for backward compatibility)
+        final regularUsers = allUsers.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final role = data['role'];
+          return role == null || role == 'user';
+        }).toList();
+
+        // Calculate user statistics
+        final totalUsers = regularUsers.length;
+        final activeUsers = regularUsers.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['disabled'] != true;
+        }).length;
+        final inactiveUsers = totalUsers - activeUsers;
+
+        // Calculate admin statistics (for Super Admin only)
+        int totalAdmins = 0;
+        int activeAdmins = 0;
+
+        if (isSuperAdmin) {
+          final admins = allUsers.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final role = data['role'];
+            return role == 'admin' || role == 'superadmin';
+          }).toList();
+
+          totalAdmins = admins.length;
+          activeAdmins = admins.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['disabled'] != true;
+          }).length;
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Dashboard Overview',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // User Statistics Section
+              const Text(
+                'User Statistics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Total Users',
+                      value: '$totalUsers',
+                      icon: Icons.people,
+                      color: const Color(0xFF1976D2), // Blue
+                      isPrimary: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Active Users',
+                      value: '$activeUsers',
+                      icon: Icons.check_circle,
+                      color: Colors.green,
+                      isPrimary: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Inactive Users',
+                      value: '$inactiveUsers',
+                      icon: Icons.cancel,
+                      color: Colors.orange,
+                      isPrimary: false,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Admin Statistics Section (Super Admin only)
+              if (isSuperAdmin) ...[
+                const SizedBox(height: 32),
+                const Text(
+                  'Admin Statistics',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        title: 'Total Admins',
+                        value: '$totalAdmins',
+                        icon: Icons.admin_panel_settings,
+                        color: const Color(0xFF1976D2), // Blue
+                        isPrimary: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        title: 'Active Admins',
+                        value: '$activeAdmins',
+                        icon: Icons.verified_user,
+                        color: Colors.green,
+                        isPrimary: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Empty space for alignment
+                    const Expanded(child: SizedBox()),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method to build stat cards
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required bool isPrimary,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(isPrimary ? 0.5 : 0.3),
+          width: isPrimary ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 32),
+              if (isPrimary)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Primary',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // USERS TAB
