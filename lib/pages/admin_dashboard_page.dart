@@ -37,6 +37,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     });
   }
 
+  // Get current page title based on selectedTab
+  String _getCurrentPageTitle() {
+    switch (selectedTab) {
+      case 0:
+        return 'Home';
+      case 1:
+        return 'Users';
+      case 2:
+        return 'Activity Logs';
+      case 3:
+        return 'Manage Admins';
+      default:
+        return 'Admin Dashboard';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSuperAdmin = widget.adminRole == 'superadmin';
@@ -45,9 +61,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       appBar: AppBar(
         title: Column(
           children: [
-            const Text(
-              'Admin Dashboard',
-              style: TextStyle(
+            Text(
+              _getCurrentPageTitle(),
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -66,31 +82,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.white),
-              ),
-              onPressed: () async {
-                await _authService.signOut();
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/',
-                  (route) => false,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-              ),
-            ),
-          ),
-        ],
+        iconTheme: const IconThemeData(color: Color(0xFF1976D2)),
       ),
+      drawer: _buildDrawer(isSuperAdmin),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -105,53 +99,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               constraints: const BoxConstraints(maxWidth: 1200),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Tab buttons
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildTabButton('Home', 0),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildTabButton('Users', 1),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildTabButton('Activity Logs', 2),
-                          ),
-                          if (isSuperAdmin) ...[
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildTabButton('Manage Admins', 3),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Tab content
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: _buildTabContent(),
-                      ),
-                    ),
-                  ],
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: _buildTabContent(),
                 ),
               ),
             ),
@@ -161,20 +115,154 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildTabButton(String title, int index) {
-    final isSelected = selectedTab == index;
-    return ElevatedButton(
-      onPressed: () => setState(() => selectedTab = index),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? const Color(0xFF1976D2) : Colors.grey.shade300,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.black87,
-          fontWeight: FontWeight.bold,
+  // Build Navigation Drawer
+  Widget _buildDrawer(bool isSuperAdmin) {
+    return Drawer(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF007BFF), Color(0xFF00B4D8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
+        child: Column(
+          children: [
+            // Drawer Header
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      isSuperAdmin ? Icons.admin_panel_settings : Icons.manage_accounts,
+                      size: 50,
+                      color: const Color(0xFF1976D2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    adminName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isSuperAdmin ? 'Super Admin' : 'Admin',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Navigation Items
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildDrawerItem(
+                    icon: Icons.home,
+                    title: 'Home',
+                    index: 0,
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.people,
+                    title: 'Users',
+                    index: 1,
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.history,
+                    title: 'Activity Logs',
+                    index: 2,
+                  ),
+                  if (isSuperAdmin)
+                    _buildDrawerItem(
+                      icon: Icons.admin_panel_settings,
+                      title: 'Manage Admins',
+                      index: 3,
+                    ),
+                ],
+              ),
+            ),
+
+            // Logout at bottom
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.white),
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () async {
+                  await _authService.signOut();
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Build individual drawer item
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required int index,
+  }) {
+    final isSelected = selectedTab == index;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: Colors.white,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+        onTap: () {
+          setState(() => selectedTab = index);
+          Navigator.pop(context); // Close drawer after selection
+        },
       ),
     );
   }
