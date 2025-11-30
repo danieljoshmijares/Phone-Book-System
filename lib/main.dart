@@ -1031,22 +1031,22 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Build page number buttons (max 5 visible)
+  // Build page number buttons (max 3 visible for mobile-friendly layout)
   List<Widget> _buildPageNumbers(int totalPages) {
     List<Widget> pageButtons = [];
 
-    // Calculate range of pages to show (max 5)
-    int startPage = currentPage - 2;
-    int endPage = currentPage + 2;
+    // Calculate range of pages to show (max 3)
+    int startPage = currentPage - 1;
+    int endPage = currentPage + 1;
 
     if (startPage < 1) {
       startPage = 1;
-      endPage = (totalPages < 5) ? totalPages : 5;
+      endPage = (totalPages < 3) ? totalPages : 3;
     }
 
     if (endPage > totalPages) {
       endPage = totalPages;
-      startPage = (totalPages < 5) ? 1 : totalPages - 4;
+      startPage = (totalPages < 3) ? 1 : totalPages - 2;
     }
 
     for (int i = startPage; i <= endPage; i++) {
