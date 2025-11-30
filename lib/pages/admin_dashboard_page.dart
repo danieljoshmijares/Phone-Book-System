@@ -638,8 +638,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               }
 
               // Filter for user activities only (role == 'user' or no role for old logs)
-              // Sort in-memory by timestamp (newest first) and limit to 100
-              final logs = snapshot.data!.docs.where((doc) {
+              // Sort in-memory by timestamp (newest first)
+              final allLogs = snapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final role = data['role'];
                 return role == null || role == 'user'; // Include old logs without role
@@ -651,42 +651,106 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   return bTime.compareTo(aTime); // Descending order
                 });
 
-              // Limit to 100 most recent
-              final limitedLogs = logs.take(100).toList();
+              // Pagination
+              final totalPages = (allLogs.length / itemsPerPage).ceil();
+              final startIndex = (logsCurrentPage - 1) * itemsPerPage;
+              final endIndex = (startIndex + itemsPerPage).clamp(0, allLogs.length);
+              final paginatedLogs = allLogs.sublist(startIndex.clamp(0, allLogs.length), endIndex);
 
-              return ListView.builder(
-                itemCount: limitedLogs.length,
-                itemBuilder: (context, index) {
-                  final log = limitedLogs[index].data() as Map<String, dynamic>;
-                  final timestamp = log['timestamp'] as Timestamp?;
-                  final email = log['email'] ?? 'Unknown';
-                  final fullName = log['fullName'] ?? 'Unknown';
-                  final action = log['action'] ?? 'unknown';
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: paginatedLogs.length,
+                      itemBuilder: (context, index) {
+                        final log = paginatedLogs[index].data() as Map<String, dynamic>;
+                        final timestamp = log['timestamp'] as Timestamp?;
+                        final email = log['email'] ?? 'Unknown';
+                        final fullName = log['fullName'] ?? 'Unknown';
+                        final action = log['action'] ?? 'unknown';
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: ListTile(
-                      leading: Icon(
-                        action == 'register' ? Icons.person_add : Icons.login,
-                        color: action == 'register' ? Colors.green : const Color(0xFF1976D2),
-                      ),
-                      title: Text(
-                        timestamp != null ? _formatTimestamp(timestamp) : 'Unknown time',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            leading: Icon(
+                              action == 'register' ? Icons.person_add : Icons.login,
+                              color: action == 'register' ? Colors.green : const Color(0xFF1976D2),
+                            ),
+                            title: Text(
+                              timestamp != null ? _formatTimestamp(timestamp) : 'Unknown time',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('$email - $fullName'),
+                                Text(
+                                  action == 'register' ? 'Registered new account' : 'Logged in',
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Pagination controls
+                  if (totalPages > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('$email - $fullName'),
-                          Text(
-                            action == 'register' ? 'Registered new account' : 'Logged in',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          // First page button
+                          IconButton(
+                            onPressed: logsCurrentPage > 1
+                                ? () => setState(() => logsCurrentPage = 1)
+                                : null,
+                            icon: const Icon(Icons.first_page),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          // Previous button
+                          IconButton(
+                            onPressed: logsCurrentPage > 1
+                                ? () => setState(() => logsCurrentPage--)
+                                : null,
+                            icon: const Icon(Icons.chevron_left),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Page numbers
+                          ..._buildPageNumbers(logsCurrentPage, totalPages, (page) {
+                            setState(() => logsCurrentPage = page);
+                          }),
+
+                          const SizedBox(width: 8),
+
+                          // Next button
+                          IconButton(
+                            onPressed: logsCurrentPage < totalPages
+                                ? () => setState(() => logsCurrentPage++)
+                                : null,
+                            icon: const Icon(Icons.chevron_right),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          // Last page button
+                          IconButton(
+                            onPressed: logsCurrentPage < totalPages
+                                ? () => setState(() => logsCurrentPage = totalPages)
+                                : null,
+                            icon: const Icon(Icons.last_page),
+                            color: const Color(0xFF1976D2),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                ],
               );
             },
           ),
@@ -741,7 +805,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               }
 
               // Sort in-memory by createdAt (newest first)
-              final admins = snapshot.data!.docs.toList()
+              final allAdmins = snapshot.data!.docs.toList()
                 ..sort((a, b) {
                   final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
                   final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
@@ -749,103 +813,170 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   return bTime.compareTo(aTime); // Descending order
                 });
 
-              return ListView.builder(
-                itemCount: admins.length,
-                itemBuilder: (context, index) {
-                  final admin = admins[index].data() as Map<String, dynamic>;
-                  final adminId = admins[index].id;
-                  final email = admin['email'] ?? 'No email';
-                  final fullName = admin['fullName'] ?? 'No name';
-                  final role = admin['role'] ?? 'admin';
-                  final createdAt = admin['createdAt'] as Timestamp?;
-                  final disabled = admin['disabled'] ?? false;
+              // Pagination
+              final totalPages = (allAdmins.length / itemsPerPage).ceil();
+              final startIndex = (adminsCurrentPage - 1) * itemsPerPage;
+              final endIndex = (startIndex + itemsPerPage).clamp(0, allAdmins.length);
+              final paginatedAdmins = allAdmins.sublist(startIndex.clamp(0, allAdmins.length), endIndex);
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: role == 'superadmin' ? Colors.amber.shade50 : Colors.white,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: disabled
-                            ? Colors.grey
-                            : (role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2)),
-                        child: Icon(
-                          role == 'superadmin' ? Icons.admin_panel_settings : Icons.manage_accounts,
-                          color: Colors.white,
-                        ),
-                      ),
-                      title: Text(
-                        fullName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          decoration: disabled ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(email),
-                          Row(
-                            children: [
-                              Chip(
-                                label: Text(
-                                  role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
-                                  style: const TextStyle(fontSize: 10, color: Colors.white),
-                                ),
-                                backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: paginatedAdmins.length,
+                      itemBuilder: (context, index) {
+                        final admin = paginatedAdmins[index].data() as Map<String, dynamic>;
+                        final adminId = paginatedAdmins[index].id;
+                        final email = admin['email'] ?? 'No email';
+                        final fullName = admin['fullName'] ?? 'No name';
+                        final role = admin['role'] ?? 'admin';
+                        final createdAt = admin['createdAt'] as Timestamp?;
+                        final disabled = admin['disabled'] ?? false;
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          color: role == 'superadmin' ? Colors.amber.shade50 : Colors.white,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: disabled
+                                  ? Colors.grey
+                                  : (role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2)),
+                              child: Icon(
+                                role == 'superadmin' ? Icons.admin_panel_settings : Icons.manage_accounts,
+                                color: Colors.white,
                               ),
-                            ],
-                          ),
-                          if (createdAt != null)
-                            Text(
-                              'Created: ${_formatTimestamp(createdAt)}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
-                        ],
-                      ),
-                      trailing: role == 'superadmin'
-                          ? null
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
+                            title: Text(
+                              fullName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: disabled ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (disabled)
-                                  const Chip(
-                                    label: Text('DISABLED', style: TextStyle(fontSize: 10)),
-                                    backgroundColor: Colors.red,
-                                    labelStyle: TextStyle(color: Colors.white),
-                                  )
-                                else
-                                  const Chip(
-                                    label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
-                                    backgroundColor: Colors.green,
-                                    labelStyle: TextStyle(color: Colors.white),
-                                  ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: () => _toggleAdminStatus(adminId, disabled, fullName),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: disabled ? Colors.green : Colors.orange,
-                                  ),
-                                  child: Text(
-                                    disabled ? 'Enable' : 'Disable',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
+                                Text(email),
+                                Row(
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
+                                        style: const TextStyle(fontSize: 10, color: Colors.white),
+                                      ),
+                                      backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: () => _deleteAdmin(adminId, fullName),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
+                                if (createdAt != null)
+                                  Text(
+                                    'Created: ${_formatTimestamp(createdAt)}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                                   ),
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
                               ],
                             ),
+                            trailing: role == 'superadmin'
+                                ? null
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (disabled)
+                                        const Chip(
+                                          label: Text('DISABLED', style: TextStyle(fontSize: 10)),
+                                          backgroundColor: Colors.red,
+                                          labelStyle: TextStyle(color: Colors.white),
+                                        )
+                                      else
+                                        const Chip(
+                                          label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
+                                          backgroundColor: Colors.green,
+                                          labelStyle: TextStyle(color: Colors.white),
+                                        ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton(
+                                        onPressed: () => _toggleAdminStatus(adminId, disabled, fullName),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: disabled ? Colors.green : Colors.orange,
+                                        ),
+                                        child: Text(
+                                          disabled ? 'Enable' : 'Disable',
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton(
+                                        onPressed: () => _deleteAdmin(adminId, fullName),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+
+                  // Pagination controls
+                  if (totalPages > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // First page button
+                          IconButton(
+                            onPressed: adminsCurrentPage > 1
+                                ? () => setState(() => adminsCurrentPage = 1)
+                                : null,
+                            icon: const Icon(Icons.first_page),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          // Previous button
+                          IconButton(
+                            onPressed: adminsCurrentPage > 1
+                                ? () => setState(() => adminsCurrentPage--)
+                                : null,
+                            icon: const Icon(Icons.chevron_left),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Page numbers
+                          ..._buildPageNumbers(adminsCurrentPage, totalPages, (page) {
+                            setState(() => adminsCurrentPage = page);
+                          }),
+
+                          const SizedBox(width: 8),
+
+                          // Next button
+                          IconButton(
+                            onPressed: adminsCurrentPage < totalPages
+                                ? () => setState(() => adminsCurrentPage++)
+                                : null,
+                            icon: const Icon(Icons.chevron_right),
+                            color: const Color(0xFF1976D2),
+                          ),
+
+                          // Last page button
+                          IconButton(
+                            onPressed: adminsCurrentPage < totalPages
+                                ? () => setState(() => adminsCurrentPage = totalPages)
+                                : null,
+                            icon: const Icon(Icons.last_page),
+                            color: const Color(0xFF1976D2),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               );
             },
           ),
