@@ -535,6 +535,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final nameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     bool obscurePassword = true;
+    final Set<String> touchedFields = {};
 
     showDialog(
       context: context,
@@ -544,37 +545,126 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordCtrl,
-                obscureText: obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+              // Full Name field
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    setDialogState(() {
+                      touchedFields.add('fullName');
+                    });
+                  }
+                },
+                child: TextField(
+                  controller: nameCtrl,
+                  onChanged: (_) {
+                    if (touchedFields.contains('fullName')) {
+                      setDialogState(() {});
+                    }
+                  },
+                  decoration: InputDecoration(
+                    label: RichText(
+                      text: const TextSpan(
+                        text: 'Full Name',
+                        style: TextStyle(color: Colors.black87, fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        ],
+                      ),
                     ),
-                    onPressed: () {
-                      setDialogState(() {
-                        obscurePassword = !obscurePassword;
-                      });
-                    },
+                    errorText: touchedFields.contains('fullName') && nameCtrl.text.trim().isEmpty
+                        ? 'This is a required field'
+                        : null,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Email field
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    setDialogState(() {
+                      touchedFields.add('email');
+                    });
+                  }
+                },
+                child: TextField(
+                  controller: emailCtrl,
+                  onChanged: (_) {
+                    if (touchedFields.contains('email')) {
+                      setDialogState(() {});
+                    }
+                  },
+                  decoration: InputDecoration(
+                    label: RichText(
+                      text: const TextSpan(
+                        text: 'Email',
+                        style: TextStyle(color: Colors.black87, fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                    errorText: touchedFields.contains('email') && emailCtrl.text.trim().isEmpty
+                        ? 'This is a required field'
+                        : null,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Password field
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    setDialogState(() {
+                      touchedFields.add('password');
+                    });
+                  }
+                },
+                child: TextField(
+                  controller: passwordCtrl,
+                  obscureText: obscurePassword,
+                  onChanged: (_) {
+                    if (touchedFields.contains('password')) {
+                      setDialogState(() {});
+                    }
+                  },
+                  decoration: InputDecoration(
+                    label: RichText(
+                      text: const TextSpan(
+                        text: 'Password',
+                        style: TextStyle(color: Colors.black87, fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                    errorText: touchedFields.contains('password') && passwordCtrl.text.trim().isEmpty
+                        ? 'This is a required field'
+                        : null,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setDialogState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
               ),
