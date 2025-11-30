@@ -1334,55 +1334,78 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Future<void> _toggleUserStatus(String userId, bool currentlyDisabled, String userName) async {
-    try {
-      await _firestore.collection('users').doc(userId).update({
-        'disabled': !currentlyDisabled,
-      });
+    final action = currentlyDisabled ? 'enable' : 'disable';
 
-      // Show success dialog (like login success)
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.green.shade50,
-          title: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
-              const SizedBox(width: 8),
-              const Text(
-                'Success!',
-                style: TextStyle(color: Colors.green),
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${currentlyDisabled ? 'Enable' : 'Disable'} User'),
+        content: Text('Are you sure you want to $action user "$userName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _firestore.collection('users').doc(userId).update({
+          'disabled': !currentlyDisabled,
+        });
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  'Success!',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ],
+            ),
+            content: Text(
+              currentlyDisabled
+                  ? 'User "$userName" has been enabled successfully.'
+                  : 'User "$userName" has been disabled successfully.',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } catch (e) {
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to update user status: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
               ),
             ],
           ),
-          content: Text(
-            currentlyDisabled
-                ? 'User "$userName" has been enabled successfully.'
-                : 'User "$userName" has been disabled successfully.',
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
-      );
-
-      // Auto-dismiss after 2 seconds
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pop(context);
-      });
-    } catch (e) {
-      // Show error dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text('Failed to update user status: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -1878,55 +1901,78 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Future<void> _toggleAdminStatus(String adminId, bool currentlyDisabled, String adminName) async {
-    try {
-      await _firestore.collection('users').doc(adminId).update({
-        'disabled': !currentlyDisabled,
-      });
+    final action = currentlyDisabled ? 'enable' : 'disable';
 
-      // Show success dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.green.shade50,
-          title: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
-              const SizedBox(width: 8),
-              const Text(
-                'Success!',
-                style: TextStyle(color: Colors.green),
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${currentlyDisabled ? 'Enable' : 'Disable'} Admin'),
+        content: Text('Are you sure you want to $action admin "$adminName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _firestore.collection('users').doc(adminId).update({
+          'disabled': !currentlyDisabled,
+        });
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  'Success!',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ],
+            ),
+            content: Text(
+              currentlyDisabled
+                  ? 'Admin "$adminName" has been enabled successfully.'
+                  : 'Admin "$adminName" has been disabled successfully.',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } catch (e) {
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to update admin status: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
               ),
             ],
           ),
-          content: Text(
-            currentlyDisabled
-                ? 'Admin "$adminName" has been enabled successfully.'
-                : 'Admin "$adminName" has been disabled successfully.',
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
-      );
-
-      // Auto-dismiss after 2 seconds
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pop(context);
-      });
-    } catch (e) {
-      // Show error dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text('Failed to update admin status: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+        );
+      }
     }
   }
 
