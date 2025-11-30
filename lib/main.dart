@@ -633,6 +633,22 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 8),
 
+                    // ==================== SELECTED COUNT ====================
+                    if (isSelectionMode)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '${selectedIndexes.length} selected',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+
                     // ==================== SELECT ALL CHECKBOX ====================
                     if (isSelectionMode)
                       Padding(

@@ -108,7 +108,7 @@ class _AddContactPageState extends State<AddContactPage> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
                             onPressed: () {
                               setState(() {
                                 customKeyCtrls.removeAt(i);
