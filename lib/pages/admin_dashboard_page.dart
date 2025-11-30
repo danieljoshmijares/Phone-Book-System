@@ -24,6 +24,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int adminsCurrentPage = 1;
   final int itemsPerPage = 10;
 
+  // Selection mode for Users tab
+  bool usersSelectionMode = false;
+  Set<int> selectedUserIndexes = {};
+
+  // Selection mode for Manage Admins tab
+  bool adminsSelectionMode = false;
+  Set<int> selectedAdminIndexes = {};
+
   @override
   void initState() {
     super.initState();
@@ -540,6 +548,76 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
         const SizedBox(height: 16),
 
+        // Action buttons (when in selection mode)
+        if (usersSelectionMode) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    selectedUserIndexes.clear();
+                    usersSelectionMode = false;
+                  });
+                },
+                icon: const Icon(Icons.close, color: Colors.white),
+                label: const Text('Cancel', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: selectedUserIndexes.isEmpty ? null : () => _bulkToggleUserStatus(true),
+                icon: const Icon(Icons.check_circle, color: Colors.white),
+                label: const Text('Enable', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: selectedUserIndexes.isEmpty ? null : () => _bulkToggleUserStatus(false),
+                icon: const Icon(Icons.cancel, color: Colors.white),
+                label: const Text('Disable', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: selectedUserIndexes.isEmpty ? null : _bulkDeleteUsers,
+                icon: const Icon(Icons.delete, color: Colors.white),
+                label: const Text('Delete', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Selected count
+        if (usersSelectionMode)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '${selectedUserIndexes.length} selected',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ),
+
         // User list
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
@@ -580,6 +658,52 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               return Column(
                 children: [
+                  // Select All checkbox (when in selection mode)
+                  if (usersSelectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Builder(
+                        builder: (context) {
+                          // Get indices of users on current page
+                          final currentPageIndices = List.generate(
+                            paginatedUsers.length,
+                            (index) => allUsers.indexOf(paginatedUsers[index]),
+                          ).toSet();
+
+                          final allCurrentPageSelected = paginatedUsers.isNotEmpty &&
+                              currentPageIndices.every((index) => selectedUserIndexes.contains(index));
+
+                          return Row(
+                            children: [
+                              Checkbox(
+                                value: allCurrentPageSelected,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      selectedUserIndexes.addAll(currentPageIndices);
+                                    } else {
+                                      selectedUserIndexes.removeAll(currentPageIndices);
+                                      if (selectedUserIndexes.isEmpty) {
+                                        usersSelectionMode = false;
+                                      }
+                                    }
+                                  });
+                                },
+                              ),
+                              const Text(
+                                'Select All',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+
                   Expanded(
                     child: ListView.builder(
                       itemCount: paginatedUsers.length,
@@ -591,75 +715,148 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         final createdAt = user['createdAt'] as Timestamp?;
                         final disabled = user['disabled'] ?? false;
 
-                        return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: disabled ? Colors.grey : const Color(0xFF1976D2),
-                        child: Text(
-                          fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      title: Text(
-                        fullName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          decoration: disabled ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(email),
-                          if (createdAt != null)
-                            Text(
-                              'Created: ${_formatTimestamp(createdAt)}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (disabled)
-                            const Chip(
-                              label: Text('DISABLED', style: TextStyle(fontSize: 10)),
-                              backgroundColor: Colors.red,
-                              labelStyle: TextStyle(color: Colors.white),
-                            )
-                          else
-                            const Chip(
-                              label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
-                              backgroundColor: Colors.green,
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () => _toggleUserStatus(userId, disabled, fullName),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: disabled ? Colors.green : Colors.orange,
-                            ),
-                            child: Text(
-                              disabled ? 'Enable' : 'Disable',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () => _deleteUser(userId, fullName),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            child: const Text(
-                              'Delete',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                        // Real index in allUsers list
+                        final realIndex = allUsers.indexOf(paginatedUsers[index]);
+                        final isSelected = selectedUserIndexes.contains(realIndex);
+
+                        return StatefulBuilder(
+                          builder: (context, setTileState) {
+                            bool isLongPressing = false;
+                            Color tileColor = isSelected ? Colors.blue.shade100 : Colors.white;
+
+                            return MouseRegion(
+                              onEnter: (_) => setTileState(() {
+                                tileColor = isSelected ? Colors.blue.shade200 : Colors.grey.shade200;
+                              }),
+                              onExit: (_) => setTileState(() {
+                                tileColor = isSelected ? Colors.blue.shade100 : Colors.white;
+                              }),
+                              child: GestureDetector(
+                                onLongPressStart: (_) {
+                                  setTileState(() {
+                                    isLongPressing = true;
+                                    tileColor = Colors.blue.shade300;
+                                  });
+                                },
+                                onLongPressEnd: (_) {
+                                  setTileState(() {
+                                    isLongPressing = false;
+                                  });
+                                  setState(() {
+                                    usersSelectionMode = true;
+                                    selectedUserIndexes.add(realIndex);
+                                  });
+                                },
+                                child: AnimatedScale(
+                                  scale: isLongPressing ? 0.95 : 1.0,
+                                  duration: const Duration(milliseconds: 100),
+                                  child: Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    color: tileColor,
+                                    child: ListTile(
+                                      leading: usersSelectionMode
+                                          ? Checkbox(
+                                              value: isSelected,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  if (value == true) {
+                                                    selectedUserIndexes.add(realIndex);
+                                                  } else {
+                                                    selectedUserIndexes.remove(realIndex);
+                                                    if (selectedUserIndexes.isEmpty) {
+                                                      usersSelectionMode = false;
+                                                    }
+                                                  }
+                                                });
+                                              },
+                                            )
+                                          : CircleAvatar(
+                                              backgroundColor: disabled ? Colors.grey : const Color(0xFF1976D2),
+                                              child: Text(
+                                                fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                                                style: const TextStyle(color: Colors.white),
+                                              ),
+                                            ),
+                                      title: Text(
+                                        fullName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          decoration: disabled ? TextDecoration.lineThrough : null,
+                                        ),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(email),
+                                          if (createdAt != null)
+                                            Text(
+                                              'Created: ${_formatTimestamp(createdAt)}',
+                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
+                                        ],
+                                      ),
+                                      trailing: usersSelectionMode
+                                          ? null
+                                          : Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (disabled)
+                                                  const Chip(
+                                                    label: Text('DISABLED', style: TextStyle(fontSize: 10)),
+                                                    backgroundColor: Colors.red,
+                                                    labelStyle: TextStyle(color: Colors.white),
+                                                  )
+                                                else
+                                                  const Chip(
+                                                    label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
+                                                    backgroundColor: Colors.green,
+                                                    labelStyle: TextStyle(color: Colors.white),
+                                                  ),
+                                                const SizedBox(width: 8),
+                                                ElevatedButton(
+                                                  onPressed: () => _toggleUserStatus(userId, disabled, fullName),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: disabled ? Colors.green : Colors.orange,
+                                                  ),
+                                                  child: Text(
+                                                    disabled ? 'Enable' : 'Disable',
+                                                    style: const TextStyle(color: Colors.white),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                ElevatedButton(
+                                                  onPressed: () => _deleteUser(userId, fullName),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                  child: const Text(
+                                                    'Delete',
+                                                    style: TextStyle(color: Colors.white),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                      onTap: usersSelectionMode
+                                          ? () {
+                                              setState(() {
+                                                if (isSelected) {
+                                                  selectedUserIndexes.remove(realIndex);
+                                                  if (selectedUserIndexes.isEmpty) {
+                                                    usersSelectionMode = false;
+                                                  }
+                                                } else {
+                                                  selectedUserIndexes.add(realIndex);
+                                                }
+                                              });
+                                            }
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
                       },
                     ),
                   ),
@@ -1228,6 +1425,170 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ],
           ),
         );
+      }
+    }
+  }
+
+  // Bulk toggle user status (enable/disable)
+  Future<void> _bulkToggleUserStatus(bool enable) async {
+    if (selectedUserIndexes.isEmpty) return;
+
+    final count = selectedUserIndexes.length;
+    final action = enable ? 'enable' : 'disable';
+
+    // Show confirmation
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${enable ? 'Enable' : 'Disable'} Users'),
+        content: Text('Are you sure you want to $action $count user${count > 1 ? 's' : ''}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Fetch current users to get IDs
+        final snapshot = await _firestore.collection('users').get();
+        final allUsers = snapshot.docs.where((doc) {
+          final data = doc.data();
+          final role = data['role'];
+          return role == null || role == 'user';
+        }).toList()
+          ..sort((a, b) {
+            final aTime = (a.data())['createdAt'] as Timestamp?;
+            final bTime = (b.data())['createdAt'] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
+
+        // Update selected users
+        for (final index in selectedUserIndexes) {
+          if (index < allUsers.length) {
+            await _firestore.collection('users').doc(allUsers[index].id).update({
+              'disabled': !enable,
+            });
+          }
+        }
+
+        setState(() {
+          selectedUserIndexes.clear();
+          usersSelectionMode = false;
+        });
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text('Success!', style: TextStyle(color: Colors.green)),
+              ],
+            ),
+            content: Text('$count user${count > 1 ? 's' : ''} ${enable ? 'enabled' : 'disabled'} successfully.'),
+          ),
+        );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } catch (e) {
+        print('Error bulk toggling users: $e');
+      }
+    }
+  }
+
+  // Bulk delete users
+  Future<void> _bulkDeleteUsers() async {
+    if (selectedUserIndexes.isEmpty) return;
+
+    final count = selectedUserIndexes.length;
+
+    // Show confirmation
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Users'),
+        content: Text('Are you sure you want to delete $count user${count > 1 ? 's' : ''}? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Fetch current users to get IDs
+        final snapshot = await _firestore.collection('users').get();
+        final allUsers = snapshot.docs.where((doc) {
+          final data = doc.data();
+          final role = data['role'];
+          return role == null || role == 'user';
+        }).toList()
+          ..sort((a, b) {
+            final aTime = (a.data())['createdAt'] as Timestamp?;
+            final bTime = (b.data())['createdAt'] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
+
+        // Delete selected users
+        for (final index in selectedUserIndexes) {
+          if (index < allUsers.length) {
+            await _firestore.collection('users').doc(allUsers[index].id).delete();
+          }
+        }
+
+        setState(() {
+          selectedUserIndexes.clear();
+          usersSelectionMode = false;
+        });
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.green.shade50,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text('Deleted!', style: TextStyle(color: Colors.green)),
+              ],
+            ),
+            content: Text('$count user${count > 1 ? 's' : ''} deleted successfully.'),
+          ),
+        );
+
+        // Auto-dismiss after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } catch (e) {
+        print('Error bulk deleting users: $e');
       }
     }
   }
