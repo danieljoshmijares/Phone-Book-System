@@ -737,23 +737,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 style: const TextStyle(color: Colors.white),
                                               ),
                                             ),
-                                      title: Text(
-                                        fullName,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          decoration: disabled ? TextDecoration.lineThrough : null,
-                                        ),
-                                      ),
-                                      subtitle: Column(
+                                      title: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(email),
-                                          if (createdAt != null)
-                                            Text(
-                                              'Created: ${_formatTimestamp(createdAt)}',
-                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                            ),
-                                          const SizedBox(height: 4),
                                           Row(
                                             children: [
                                               if (disabled)
@@ -774,6 +760,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 ),
                                             ],
                                           ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            fullName,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              decoration: disabled ? TextDecoration.lineThrough : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(email),
+                                          if (createdAt != null)
+                                            Text(
+                                              'Created: ${_formatTimestamp(createdAt)}',
+                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
                                         ],
                                       ),
                                       trailing: usersSelectionMode
@@ -1335,36 +1341,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 color: Colors.white,
                                               ),
                                             ),
-                                      title: Text(
-                                        fullName,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          decoration: disabled ? TextDecoration.lineThrough : null,
-                                        ),
-                                      ),
-                                      subtitle: Column(
+                                      title: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(email),
-                                          Row(
-                                            children: [
-                                              Chip(
-                                                label: Text(
-                                                  role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
-                                                  style: const TextStyle(fontSize: 10, color: Colors.white),
-                                                ),
-                                                backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                              ),
-                                            ],
-                                          ),
-                                          if (createdAt != null)
-                                            Text(
-                                              'Created: ${_formatTimestamp(createdAt)}',
-                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                            ),
-                                          const SizedBox(height: 4),
                                           Row(
                                             children: [
                                               if (disabled)
@@ -1385,6 +1364,39 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 ),
                                             ],
                                           ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            fullName,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              decoration: disabled ? TextDecoration.lineThrough : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(email),
+                                          Row(
+                                            children: [
+                                              Chip(
+                                                label: Text(
+                                                  role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
+                                                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                                                ),
+                                                backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              ),
+                                            ],
+                                          ),
+                                          if (createdAt != null)
+                                            Text(
+                                              'Created: ${_formatTimestamp(createdAt)}',
+                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
                                         ],
                                       ),
                                       trailing: isSuperAdmin || adminsSelectionMode
@@ -2033,29 +2045,133 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // Validate all fields are filled
                 if (nameCtrl.text.trim().isEmpty ||
                     emailCtrl.text.trim().isEmpty ||
                     passwordCtrl.text.trim().isEmpty ||
                     confirmPasswordCtrl.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All fields are required'),
-                      backgroundColor: Colors.red,
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('All fields are required'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
                     ),
                   );
                   return;
                 }
 
+                // Validate passwords match
                 if (passwordCtrl.text != confirmPasswordCtrl.text) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Passwords do not match'),
-                      backgroundColor: Colors.red,
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Passwords do not match'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
                     ),
                   );
                   return;
                 }
 
+                // Validate password requirements
+                final password = passwordCtrl.text;
+                if (password.length < 8) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Password must be at least 8 characters long'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                if (!password.contains(RegExp(r'[A-Z]'))) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Password must contain at least one uppercase letter'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                if (!password.contains(RegExp(r'[a-z]'))) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Password must contain at least one lowercase letter'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                if (!password.contains(RegExp(r'[0-9]'))) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Password must contain at least one number'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Validation Error'),
+                      content: const Text('Password must contain at least one special character (!@#\$%^&*(),.?":{}|<>)'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                // All validations passed, create admin
                 final result = await _authService.register(
                   email: emailCtrl.text.trim(),
                   password: passwordCtrl.text.trim(),
@@ -2065,12 +2181,47 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
                 Navigator.pop(context);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(result['message']),
-                    backgroundColor: result['success'] ? Colors.green : Colors.red,
-                  ),
-                );
+                // Show result in dialog
+                if (mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      // Auto-dismiss success dialog after 2 seconds
+                      if (result['success']) {
+                        Future.delayed(const Duration(seconds: 2), () {
+                          if (mounted) Navigator.of(context).pop();
+                        });
+                      }
+
+                      return AlertDialog(
+                        backgroundColor: result['success'] ? Colors.green.shade50 : Colors.red.shade50,
+                        title: Row(
+                          children: [
+                            Icon(
+                              result['success'] ? Icons.check_circle : Icons.error,
+                              color: result['success'] ? Colors.green.shade700 : Colors.red.shade700,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              result['success'] ? 'Success!' : 'Error',
+                              style: TextStyle(
+                                color: result['success'] ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: Text(result['message']),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976D2),
