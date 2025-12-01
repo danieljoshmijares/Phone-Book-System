@@ -104,7 +104,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
+              constraints: const BoxConstraints(maxWidth: 800),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Container(
@@ -1102,36 +1102,55 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   // MANAGE ADMINS TAB (Super Admin only)
   Widget _buildManageAdminsTab() {
-    return Column(
+    return Stack(
       children: [
-        const Text(
-          'Manage Administrators',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
+        Column(
+          children: [
+            const Text(
+              'Manage Administrators',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
 
-        // Create Admin button
-        ElevatedButton.icon(
-          onPressed: _showCreateAdminDialog,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Create Admin',
-            style: TextStyle(color: Colors.white),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1976D2),
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          ),
-        ),
+            // Create Admin button (hide in selection mode)
+            if (!adminsSelectionMode)
+              ElevatedButton.icon(
+                onPressed: _showCreateAdminDialog,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Create Admin',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1976D2),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                ),
+              ),
 
-        const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-        // Admin list
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
+            // Selected count (when in selection mode)
+            if (adminsSelectionMode)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '${selectedAdminIndexes.length} selected',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Admin list
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('users')
                 .where('role', whereIn: ['admin', 'superadmin'])
@@ -1162,6 +1181,59 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               return Column(
                 children: [
+                  // Select All checkbox (when in selection mode)
+                  if (adminsSelectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Builder(
+                        builder: (context) {
+                          // Get indices of selectable admins on current page (exclude Super Admins)
+                          final selectableAdmins = List.generate(
+                            paginatedAdmins.length,
+                            (index) {
+                              final admin = paginatedAdmins[index].data() as Map<String, dynamic>;
+                              final role = admin['role'] ?? 'admin';
+                              if (role == 'superadmin') return -1; // Mark as not selectable
+                              return allAdmins.indexOf(paginatedAdmins[index]);
+                            },
+                          ).where((index) => index != -1).toSet();
+
+                          final allSelectableSelected = selectableAdmins.isNotEmpty &&
+                              selectableAdmins.every((index) => selectedAdminIndexes.contains(index));
+
+                          return Row(
+                            children: [
+                              Checkbox(
+                                value: allSelectableSelected,
+                                onChanged: selectableAdmins.isEmpty
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          if (value == true) {
+                                            selectedAdminIndexes.addAll(selectableAdmins);
+                                          } else {
+                                            selectedAdminIndexes.removeAll(selectableAdmins);
+                                            if (selectedAdminIndexes.isEmpty) {
+                                              adminsSelectionMode = false;
+                                            }
+                                          }
+                                        });
+                                      },
+                              ),
+                              const Text(
+                                'Select All',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+
                   Expanded(
                     child: ListView.builder(
                       itemCount: paginatedAdmins.length,
@@ -1173,99 +1245,196 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         final role = admin['role'] ?? 'admin';
                         final createdAt = admin['createdAt'] as Timestamp?;
                         final disabled = admin['disabled'] ?? false;
+                        final isSuperAdmin = role == 'superadmin';
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          color: role == 'superadmin' ? Colors.amber.shade50 : Colors.white,
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: disabled
-                                  ? Colors.grey
-                                  : (role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2)),
-                              child: Icon(
-                                role == 'superadmin' ? Icons.admin_panel_settings : Icons.manage_accounts,
-                                color: Colors.white,
-                              ),
-                            ),
-                            title: Text(
-                              fullName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                decoration: disabled ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(email),
-                                Row(
-                                  children: [
-                                    Chip(
-                                      label: Text(
-                                        role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
-                                        style: const TextStyle(fontSize: 10, color: Colors.white),
+                        // Real index in allAdmins list
+                        final realIndex = allAdmins.indexOf(paginatedAdmins[index]);
+                        final isSelected = selectedAdminIndexes.contains(realIndex);
+
+                        return StatefulBuilder(
+                          builder: (context, setTileState) {
+                            bool isLongPressing = false;
+                            Color tileColor = isSelected
+                                ? Colors.blue.shade100
+                                : (isSuperAdmin ? Colors.amber.shade50 : Colors.white);
+
+                            return MouseRegion(
+                              onEnter: (_) => setTileState(() {
+                                tileColor = isSelected
+                                    ? Colors.blue.shade200
+                                    : (isSuperAdmin ? Colors.amber.shade100 : Colors.grey.shade200);
+                              }),
+                              onExit: (_) => setTileState(() {
+                                tileColor = isSelected
+                                    ? Colors.blue.shade100
+                                    : (isSuperAdmin ? Colors.amber.shade50 : Colors.white);
+                              }),
+                              child: GestureDetector(
+                                onLongPressStart: isSuperAdmin
+                                    ? null
+                                    : (_) {
+                                        setTileState(() {
+                                          isLongPressing = true;
+                                          tileColor = Colors.blue.shade300;
+                                        });
+                                      },
+                                onLongPressEnd: isSuperAdmin
+                                    ? null
+                                    : (_) {
+                                        setTileState(() {
+                                          isLongPressing = false;
+                                        });
+                                        setState(() {
+                                          adminsSelectionMode = true;
+                                          selectedAdminIndexes.add(realIndex);
+                                        });
+                                      },
+                                child: AnimatedScale(
+                                  scale: isLongPressing ? 0.95 : 1.0,
+                                  duration: const Duration(milliseconds: 100),
+                                  child: Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    color: tileColor,
+                                    child: ListTile(
+                                      leading: adminsSelectionMode && !isSuperAdmin
+                                          ? Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Checkbox(
+                                                  value: isSelected,
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      if (value == true) {
+                                                        selectedAdminIndexes.add(realIndex);
+                                                      } else {
+                                                        selectedAdminIndexes.remove(realIndex);
+                                                        if (selectedAdminIndexes.isEmpty) {
+                                                          adminsSelectionMode = false;
+                                                        }
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                                CircleAvatar(
+                                                  backgroundColor: disabled
+                                                      ? Colors.grey
+                                                      : (isSuperAdmin ? Colors.amber : const Color(0xFF1976D2)),
+                                                  child: Icon(
+                                                    isSuperAdmin ? Icons.admin_panel_settings : Icons.manage_accounts,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : CircleAvatar(
+                                              backgroundColor: disabled
+                                                  ? Colors.grey
+                                                  : (isSuperAdmin ? Colors.amber : const Color(0xFF1976D2)),
+                                              child: Icon(
+                                                isSuperAdmin ? Icons.admin_panel_settings : Icons.manage_accounts,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                      title: Text(
+                                        fullName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          decoration: disabled ? TextDecoration.lineThrough : null,
+                                        ),
                                       ),
-                                      backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(email),
+                                          Row(
+                                            children: [
+                                              Chip(
+                                                label: Text(
+                                                  role == 'superadmin' ? 'SUPER ADMIN' : 'ADMIN',
+                                                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                                                ),
+                                                backgroundColor: role == 'superadmin' ? Colors.amber : const Color(0xFF1976D2),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              ),
+                                            ],
+                                          ),
+                                          if (createdAt != null)
+                                            Text(
+                                              'Created: ${_formatTimestamp(createdAt)}',
+                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              if (disabled)
+                                                const Chip(
+                                                  label: Text('DISABLED', style: TextStyle(fontSize: 10)),
+                                                  backgroundColor: Colors.red,
+                                                  labelStyle: TextStyle(color: Colors.white),
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                )
+                                              else
+                                                const Chip(
+                                                  label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
+                                                  backgroundColor: Colors.green,
+                                                  labelStyle: TextStyle(color: Colors.white),
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: isSuperAdmin || adminsSelectionMode
+                                          ? null
+                                          : Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  onPressed: () => _toggleAdminStatus(adminId, disabled, fullName),
+                                                  icon: Icon(
+                                                    disabled ? Icons.check_circle : Icons.cancel,
+                                                    color: disabled ? Colors.green : Colors.orange,
+                                                  ),
+                                                  tooltip: disabled ? 'Enable' : 'Disable',
+                                                ),
+                                                IconButton(
+                                                  onPressed: () => _deleteAdmin(adminId, fullName),
+                                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                                  tooltip: 'Delete',
+                                                ),
+                                              ],
+                                            ),
+                                      onTap: adminsSelectionMode && !isSuperAdmin
+                                          ? () {
+                                              setState(() {
+                                                if (isSelected) {
+                                                  selectedAdminIndexes.remove(realIndex);
+                                                  if (selectedAdminIndexes.isEmpty) {
+                                                    adminsSelectionMode = false;
+                                                  }
+                                                } else {
+                                                  selectedAdminIndexes.add(realIndex);
+                                                }
+                                              });
+                                            }
+                                          : null,
                                     ),
-                                  ],
+                                  ),
                                 ),
-                                if (createdAt != null)
-                                  Text(
-                                    'Created: ${_formatTimestamp(createdAt)}',
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
-                              ],
-                            ),
-                            trailing: role == 'superadmin'
-                                ? null
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (disabled)
-                                        const Chip(
-                                          label: Text('DISABLED', style: TextStyle(fontSize: 10)),
-                                          backgroundColor: Colors.red,
-                                          labelStyle: TextStyle(color: Colors.white),
-                                        )
-                                      else
-                                        const Chip(
-                                          label: Text('ACTIVE', style: TextStyle(fontSize: 10)),
-                                          backgroundColor: Colors.green,
-                                          labelStyle: TextStyle(color: Colors.white),
-                                        ),
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: () => _toggleAdminStatus(adminId, disabled, fullName),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: disabled ? Colors.green : Colors.orange,
-                                        ),
-                                        child: Text(
-                                          disabled ? 'Enable' : 'Disable',
-                                          style: const TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: () => _deleteAdmin(adminId, fullName),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                        ),
-                                        child: const Text(
-                                          'Delete',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
                   ),
 
-                  // Pagination controls
-                  if (totalPages > 1)
-                    Padding(
+            // Pagination controls
+            if (totalPages > 1)
+              Padding(
                       padding: const EdgeInsets.only(top: 16.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1322,6 +1491,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             },
           ),
         ),
+          ],
+        ),
+
+        // Floating Action Button (when in selection mode)
+        if (adminsSelectionMode)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _showAdminsBulkActionsSheet,
+              backgroundColor: const Color(0xFF1976D2),
+              icon: const Icon(Icons.menu, color: Colors.white),
+              label: const Text(
+                'Actions',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1648,7 +1835,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final emailCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
+    final confirmPasswordCtrl = TextEditingController();
     bool obscurePassword = true;
+    bool obscureConfirmPassword = true;
     final Set<String> touchedFields = {};
 
     showDialog(
@@ -1782,6 +1971,59 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // Confirm Password field
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    setDialogState(() {
+                      touchedFields.add('confirmPassword');
+                    });
+                  }
+                },
+                child: TextField(
+                  controller: confirmPasswordCtrl,
+                  obscureText: obscureConfirmPassword,
+                  onChanged: (_) {
+                    if (touchedFields.contains('confirmPassword')) {
+                      setDialogState(() {});
+                    }
+                  },
+                  decoration: InputDecoration(
+                    label: RichText(
+                      text: const TextSpan(
+                        text: 'Confirm Password',
+                        style: TextStyle(color: Colors.black87, fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                    errorText: touchedFields.contains('confirmPassword')
+                        ? (confirmPasswordCtrl.text.trim().isEmpty
+                            ? 'This is a required field'
+                            : (confirmPasswordCtrl.text != passwordCtrl.text
+                                ? 'Passwords do not match'
+                                : null))
+                        : null,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setDialogState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -1793,10 +2035,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty ||
                     emailCtrl.text.trim().isEmpty ||
-                    passwordCtrl.text.trim().isEmpty) {
+                    passwordCtrl.text.trim().isEmpty ||
+                    confirmPasswordCtrl.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('All fields are required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                if (passwordCtrl.text != confirmPasswordCtrl.text) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Passwords do not match'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1972,6 +2225,237 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ],
           ),
         );
+      }
+    }
+  }
+
+  // Show bulk actions bottom sheet for Manage Admins tab
+  void _showAdminsBulkActionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.check_circle, color: Colors.green),
+              title: const Text('Enable Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkToggleAdminStatus(true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel, color: Colors.orange),
+              title: const Text('Disable Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkToggleAdminStatus(false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Selected'),
+              onTap: () {
+                Navigator.pop(context);
+                _bulkDeleteAdmins();
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.close, color: Colors.grey),
+              title: const Text('Cancel'),
+              onTap: () {
+                setState(() {
+                  selectedAdminIndexes.clear();
+                  adminsSelectionMode = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Bulk toggle admin status
+  Future<void> _bulkToggleAdminStatus(bool enable) async {
+    final action = enable ? 'enable' : 'disable';
+    final count = selectedAdminIndexes.length;
+
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${enable ? 'Enable' : 'Disable'} Admins'),
+        content: Text('Are you sure you want to $action $count admin(s)?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Get admin documents and update selected ones
+        final snapshot = await _firestore
+            .collection('users')
+            .where('role', whereIn: ['admin', 'superadmin'])
+            .get();
+        final admins = snapshot.docs.toList();
+
+        for (final index in selectedAdminIndexes) {
+          if (index < admins.length) {
+            final adminId = admins[index].id;
+            await _firestore.collection('users').doc(adminId).update({
+              'disabled': !enable,
+            });
+          }
+        }
+
+        // Show success dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) {
+              // Auto-dismiss after 1.5 seconds
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (mounted) Navigator.of(context).pop();
+              });
+
+              return AlertDialog(
+                title: const Text('Success'),
+                content: Text('Successfully ${enable ? 'enabled' : 'disabled'} $count admin(s).'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
+
+          // Clear selection
+          setState(() {
+            selectedAdminIndexes.clear();
+            adminsSelectionMode = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to $action admins: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Bulk delete admins
+  Future<void> _bulkDeleteAdmins() async {
+    final count = selectedAdminIndexes.length;
+
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Admins'),
+        content: Text('Are you sure you want to delete $count admin(s)? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        // Get admin documents and delete selected ones
+        final snapshot = await _firestore
+            .collection('users')
+            .where('role', whereIn: ['admin', 'superadmin'])
+            .get();
+        final admins = snapshot.docs.toList();
+
+        for (final index in selectedAdminIndexes) {
+          if (index < admins.length) {
+            final adminId = admins[index].id;
+            await _firestore.collection('users').doc(adminId).delete();
+          }
+        }
+
+        // Show success dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) {
+              // Auto-dismiss after 1.5 seconds
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (mounted) Navigator.of(context).pop();
+              });
+
+              return AlertDialog(
+                title: const Text('Success'),
+                content: Text('Successfully deleted $count admin(s).'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
+
+          // Clear selection
+          setState(() {
+            selectedAdminIndexes.clear();
+            adminsSelectionMode = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to delete admins: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
