@@ -1099,16 +1099,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 ),
                               );
                             } else {
+                              // Valid hours - hide custom input and apply filter
                               setState(() {
+                                showCustomHoursInput = false;
                                 logsCurrentPage = 1; // Reset pagination
                               });
                             }
                           },
                         ),
                       ),
-                      onSubmitted: (_) => setState(() {
-                        logsCurrentPage = 1;
-                      }),
+                      onSubmitted: (_) {
+                        final hours = int.tryParse(customHoursController.text);
+                        if (hours != null && hours > 0 && hours <= 8760) {
+                          setState(() {
+                            showCustomHoursInput = false;
+                            logsCurrentPage = 1;
+                          });
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
