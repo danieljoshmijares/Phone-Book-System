@@ -644,10 +644,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               return Column(
                 children: [
-                  // Select All checkbox (when in selection mode)
+                  // Select All checkbox and Actions button (when in selection mode)
                   if (usersSelectionMode)
                     Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      padding: const EdgeInsets.only(left: 4, bottom: 8, right: 4),
                       child: Builder(
                         builder: (context) {
                           // Get indices of users on current page
@@ -682,6 +682,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              ElevatedButton.icon(
+                                onPressed: _showUsersBulkActionsSheet,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1976D2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                icon: const Icon(Icons.menu, color: Colors.white, size: 20),
+                                label: const Text(
+                                  'Actions',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -924,21 +937,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ],
     ),
-        // Floating Action Button (when in selection mode)
-        if (usersSelectionMode)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _showUsersBulkActionsSheet,
-              backgroundColor: const Color(0xFF1976D2),
-              icon: const Icon(Icons.menu, color: Colors.white),
-              label: const Text(
-                'Actions',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -1368,10 +1366,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               return Column(
                 children: [
-                  // Select All checkbox (when in selection mode)
+                  // Select All checkbox and Actions button (when in selection mode)
                   if (adminsSelectionMode)
                     Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      padding: const EdgeInsets.only(left: 4, bottom: 8, right: 4),
                       child: Builder(
                         builder: (context) {
                           // Get indices of selectable admins on current page (exclude Super Admins)
@@ -1413,6 +1411,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              ElevatedButton.icon(
+                                onPressed: _showAdminsBulkActionsSheet,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1976D2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                                icon: const Icon(Icons.menu, color: Colors.white, size: 20),
+                                label: const Text(
+                                  'Actions',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -1686,22 +1697,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
           ],
         ),
-
-        // Floating Action Button (when in selection mode)
-        if (adminsSelectionMode)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _showAdminsBulkActionsSheet,
-              backgroundColor: const Color(0xFF1976D2),
-              icon: const Icon(Icons.menu, color: Colors.white),
-              label: const Text(
-                'Actions',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
       ],
     );
   }
