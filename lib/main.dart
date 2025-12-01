@@ -10,6 +10,7 @@ import 'pages/edit_contact_page.dart';
 import 'pages/view_contact_page.dart';
 import 'pages/login_user_page.dart';
 import 'pages/admin_dashboard_page.dart';
+import 'pages/change_password_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -317,8 +318,39 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Spacer to push logout to bottom
+            // Spacer to push change password and logout to bottom
             const Spacer(),
+
+            // Change Password
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.lock_reset, color: Colors.white),
+                title: const Text(
+                  'Change Password',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
 
             // Logout at bottom
             Container(

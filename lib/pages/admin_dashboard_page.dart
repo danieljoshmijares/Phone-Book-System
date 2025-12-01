@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import 'change_password_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final String adminRole; // 'admin' or 'superadmin'
@@ -205,6 +206,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ],
               ),
             ),
+
+            // Change Password (not for Super Admin - uses .env)
+            if (!isSuperAdmin)
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.lock_reset, color: Colors.white),
+                  title: const Text(
+                    'Change Password',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChangePasswordPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // Logout at bottom
             Container(
@@ -2053,7 +2086,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Missing Information'),
                       content: const Text('All fields are required'),
                       actions: [
                         TextButton(
@@ -2071,8 +2104,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
-                      content: const Text('Passwords do not match'),
+                      title: const Text('Passwords Mismatch'),
+                      content: const Text('Passwords do not match. Please try again.'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
@@ -2090,7 +2123,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Password Too Short'),
                       content: const Text('Password must be at least 8 characters long'),
                       actions: [
                         TextButton(
@@ -2107,7 +2140,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Missing Uppercase Letter'),
                       content: const Text('Password must contain at least one uppercase letter'),
                       actions: [
                         TextButton(
@@ -2124,7 +2157,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Missing Lowercase Letter'),
                       content: const Text('Password must contain at least one lowercase letter'),
                       actions: [
                         TextButton(
@@ -2141,7 +2174,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Missing Number'),
                       content: const Text('Password must contain at least one number'),
                       actions: [
                         TextButton(
@@ -2158,7 +2191,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Validation Error'),
+                      title: const Text('Missing Special Character'),
                       content: const Text('Password must contain at least one special character (!@#\$%^&*(),.?":{}|<>)'),
                       actions: [
                         TextButton(
@@ -2179,7 +2212,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   role: 'admin',
                 );
 
-                Navigator.pop(context);
+                // Only close Create Admin dialog on success
+                if (result['success']) {
+                  Navigator.pop(context);
+                }
 
                 // Show result in dialog
                 if (mounted) {
@@ -2204,7 +2240,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              result['success'] ? 'Success!' : 'Error',
+                              result['success'] ? 'Success!' : 'Registration Failed',
                               style: TextStyle(
                                 color: result['success'] ? Colors.green : Colors.red,
                               ),

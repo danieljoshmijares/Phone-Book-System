@@ -169,6 +169,47 @@ class AuthService {
     }
   }
 
+  // Change password (requires current password for re-authentication)
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return {'success': false, 'message': 'Not logged in'};
+      }
+
+      if (user.email == null) {
+        return {'success': false, 'message': 'User email not found'};
+      }
+
+      // Re-authenticate with current password first
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+
+      // Update to new password
+      await user.updatePassword(newPassword);
+
+      return {'success': true, 'message': 'Password changed successfully'};
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        return {'success': false, 'message': 'Current password is incorrect'};
+      } else if (e.code == 'weak-password') {
+        return {'success': false, 'message': 'New password is too weak'};
+      } else if (e.code == 'requires-recent-login') {
+        return {'success': false, 'message': 'Please log out and log in again before changing password'};
+      }
+      return {'success': false, 'message': 'Password change failed: ${e.message}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Password change failed: $e'};
+    }
+  }
+
   // Initialize Super Admin with credentials from .env file
   Future<void> initializeSuperAdmin() async {
     final superAdminEmail = dotenv.env['SUPER_ADMIN_EMAIL'] ?? '';
