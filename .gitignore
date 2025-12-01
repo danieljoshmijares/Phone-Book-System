@@ -46,3 +46,9 @@ app.*.map.json
 
 # Environment variables (contains sensitive credentials)
 .env
+
+# Firebase local state/cache
+.firebase/
+
+# Claude local configuration settings
+.claude/
