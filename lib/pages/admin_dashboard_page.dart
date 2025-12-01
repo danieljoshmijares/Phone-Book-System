@@ -33,6 +33,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool adminsSelectionMode = false;
   Set<int> selectedAdminIndexes = {};
 
+  // Activity Logs filtering
+  int selectedLogFilter = 30; // Default to 30 days
+  final TextEditingController customHoursController = TextEditingController();
+  bool showCustomHoursInput = false;
+
   @override
   void initState() {
     super.initState();
@@ -991,6 +996,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   // ACTIVITY LOGS TAB
   Widget _buildActivityLogsTab() {
+    final isSuperAdmin = widget.adminRole == 'superadmin';
+
+    // Calculate cutoff timestamp based on selected filter
+    DateTime? cutoffTime;
+    if (selectedLogFilter > 0) {
+      final hours = selectedLogFilter * 24; // Convert days to hours
+      cutoffTime = DateTime.now().subtract(Duration(hours: hours));
+    } else if (showCustomHoursInput) {
+      // Custom hours - will be validated
+      final customHours = int.tryParse(customHoursController.text);
+      if (customHours != null && customHours > 0) {
+        cutoffTime = DateTime.now().subtract(Duration(hours: customHours));
+      }
+    }
+
     return Column(
       children: [
         const Text(
@@ -1001,6 +1021,113 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
         const SizedBox(height: 16),
+
+        // Date filter buttons (Super Admin only)
+        if (isSuperAdmin) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildFilterChip('1 Day', 1),
+              _buildFilterChip('3 Days', 3),
+              _buildFilterChip('7 Days', 7),
+              _buildFilterChip('30 Days', 30),
+              _buildFilterChip('90 Days', 90),
+              _buildFilterChip('Custom', 0),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Custom hours input
+          if (showCustomHoursInput)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: customHoursController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Custom Hours (max 8760)',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.check),
+                          onPressed: () {
+                            final hours = int.tryParse(customHoursController.text);
+                            if (hours == null) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Invalid Input'),
+                                  content: const Text('Please enter a valid number'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else if (hours <= 0) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Invalid Hours'),
+                                  content: const Text('Hours must be greater than 0'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else if (hours > 8760) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Hours Exceeds Limit'),
+                                  content: const Text('Maximum allowed hours is 8760 (1 year)'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              setState(() {
+                                logsCurrentPage = 1; // Reset pagination
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      onSubmitted: (_) => setState(() {
+                        logsCurrentPage = 1;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        showCustomHoursInput = false;
+                        customHoursController.clear();
+                        selectedLogFilter = 30; // Reset to default
+                        logsCurrentPage = 1;
+                      });
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
 
         // Activity logs list
         Expanded(
@@ -1018,11 +1145,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               }
 
               // Filter for user activities only (role == 'user' or no role for old logs)
+              // Also filter by date if cutoffTime is set
               // Sort in-memory by timestamp (newest first)
               final allLogs = snapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final role = data['role'];
-                return role == null || role == 'user'; // Include old logs without role
+
+                // Check role filter
+                if (role != null && role != 'user') return false;
+
+                // Check date filter
+                if (cutoffTime != null) {
+                  final timestamp = data['timestamp'] as Timestamp?;
+                  if (timestamp == null) return false;
+                  final logTime = timestamp.toDate();
+                  if (logTime.isBefore(cutoffTime)) return false;
+                }
+
+                return true;
               }).toList()
                 ..sort((a, b) {
                   final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
@@ -1563,6 +1703,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final date = timestamp.toDate();
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildFilterChip(String label, int days) {
+    final isSelected = days == 0
+        ? showCustomHoursInput
+        : (selectedLogFilter == days && !showCustomHoursInput);
+
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          if (days == 0) {
+            // Custom option
+            showCustomHoursInput = true;
+            selectedLogFilter = 0;
+          } else {
+            // Preset days option
+            showCustomHoursInput = false;
+            selectedLogFilter = days;
+          }
+          logsCurrentPage = 1; // Reset pagination when filter changes
+        });
+      },
+      selectedColor: const Color(0xFF1976D2).withOpacity(0.2),
+      checkmarkColor: const Color(0xFF1976D2),
+    );
   }
 
   Future<void> _toggleUserStatus(String userId, bool currentlyDisabled, String userName) async {
