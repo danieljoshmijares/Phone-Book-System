@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(\"lib\\pages\\admin_dashboard_page.dart.tmp\")"
-    ],
-    "deny": [],
-    "ask": []
-  }
-}
