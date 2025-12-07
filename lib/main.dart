@@ -94,8 +94,40 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _validateSession();
     _loadContacts();
     _loadUserName();
+  }
+
+  // Validate user session on page load
+  Future<void> _validateSession() async {
+    final result = await _authService.validateSession();
+    if (!result['valid'] && mounted) {
+      String message = 'Your session has expired.';
+      if (result['reason'] == 'account_deleted') {
+        message = 'Your account has been deleted by an administrator.';
+      } else if (result['reason'] == 'account_disabled') {
+        message = 'Your account has been disabled by an administrator.';
+      }
+
+      // Show message and redirect to login
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Session Invalid'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   // Load user's full name

@@ -86,10 +86,17 @@ class AuthService {
       User? user = result.user;
 
       if (user != null) {
-        // Check if account is disabled in Firestore
+        // Check if user document exists in Firestore
         final doc = await _firestore.collection('users').doc(user.uid).get();
+
+        if (!doc.exists) {
+          await _auth.signOut(); // Sign out immediately
+          return {'success': false, 'message': 'This account has been deleted by an administrator'};
+        }
+
         final userData = doc.data();
 
+        // Check if account is disabled in Firestore
         if (userData != null && userData['disabled'] == true) {
           await _auth.signOut(); // Sign out immediately
           return {'success': false, 'message': 'This account has been disabled by an administrator'};
@@ -207,6 +214,36 @@ class AuthService {
       return {'success': false, 'message': 'Password change failed: ${e.message}'};
     } catch (e) {
       return {'success': false, 'message': 'Password change failed: $e'};
+    }
+  }
+
+  // Validate current user's session (check if account still exists and is not disabled)
+  Future<Map<String, dynamic>> validateSession() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return {'valid': false, 'reason': 'not_logged_in'};
+    }
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+
+      // Check if user document exists
+      if (!doc.exists) {
+        await _auth.signOut();
+        return {'valid': false, 'reason': 'account_deleted'};
+      }
+
+      final userData = doc.data();
+
+      // Check if account is disabled
+      if (userData != null && userData['disabled'] == true) {
+        await _auth.signOut();
+        return {'valid': false, 'reason': 'account_disabled'};
+      }
+
+      return {'valid': true};
+    } catch (e) {
+      return {'valid': false, 'reason': 'error', 'error': e.toString()};
     }
   }
 
